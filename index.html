@@ -112,36 +112,36 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
 <!-- RESUMEN -->
 <div class="page active" id="page-resumen">
   <div class="kpi-grid">
-    <div class="kpi c-green">
-      <div class="kpi-lbl">Ciclo promedio Jun 2026</div>
-      <div class="kpi-val" style="color:var(--green);">1.72 d</div>
-      <div class="kpi-sub">↓ vs 4.0d de abril · mejora del 57%</div>
+    <div class="kpi c-blue" id="kpi-ciclo">
+      <div class="kpi-lbl" id="kpi-ciclo-lbl">Ciclo promedio</div>
+      <div class="kpi-val" id="kpi-ciclo-val">—</div>
+      <div class="kpi-sub" id="kpi-ciclo-sub">—</div>
     </div>
-    <div class="kpi c-blue">
+    <div class="kpi c-blue" id="kpi-conf">
       <div class="kpi-lbl">Confiabilidad inventario</div>
-      <div class="kpi-val" style="color:var(--amber);">97.2%</div>
-      <div class="kpi-sub">May 98.5% · Jun 95.1%</div>
+      <div class="kpi-val" id="kpi-conf-val">—</div>
+      <div class="kpi-sub" id="kpi-conf-sub">—</div>
     </div>
-    <div class="kpi c-amber">
-      <div class="kpi-lbl">Picking uds/min · Jun</div>
-      <div class="kpi-val" style="color:var(--green);">6.09</div>
-      <div class="kpi-sub">↑ vs 4.7 de abril · mejora del 30%</div>
+    <div class="kpi c-blue" id="kpi-pick">
+      <div class="kpi-lbl" id="kpi-pick-lbl">Picking uds/min</div>
+      <div class="kpi-val" id="kpi-pick-val">—</div>
+      <div class="kpi-sub" id="kpi-pick-sub">—</div>
     </div>
     <div class="kpi c-purple">
       <div class="kpi-lbl">Pedidos procesados</div>
-      <div class="kpi-val">7,603</div>
-      <div class="kpi-sub">Abr 1,921 · May 3,608 · Jun 2,074</div>
+      <div class="kpi-val" id="kpi-ped-val">—</div>
+      <div class="kpi-sub" id="kpi-ped-sub">—</div>
     </div>
   </div>
 
-  <div class="insight insight-green">
-    <div class="insight-title">✓ La operación SÍ está mejorando su ciclo de pedido</div>
-    <div class="insight-body">El ciclo ponderado real pasó de <strong style="color:var(--text);">4.0 días en abril</strong> → <strong style="color:var(--text);">2.1 días en mayo</strong> → <strong style="color:var(--text);">1.7 días en junio</strong>. Una reducción del 57% en tres meses. La mejora es consistente y está liderada por CPW (el tipo de mayor volumen) que bajó de 4.2 → 1.7 → 1.6 días. CPF también mejoró de 5.5 → 2.6 → 1.5 días. El picking acompaña: de 4.7 → 5.6 → 6.1 u/min.</div>
+  <div class="insight insight-amber" id="insight-1">
+    <div class="insight-title" id="insight-1-title">—</div>
+    <div class="insight-body" id="insight-1-body">—</div>
   </div>
 
-  <div class="insight insight-amber">
-    <div class="insight-title">⚠ Tipos con ciclo aún elevado o en deterioro</div>
-    <div class="insight-body">CPV se mantiene alto (7.0 → 6.4 → 5.9 d) y aunque baja, sigue siendo el tipo más lento con ciclo real. CPG empeoró en mayo (2.9 → 7.3 d) antes de recuperar en junio (3.3 d). CRT pasó de 1.1 → 1.8 → 9.0 d en junio (solo 2 pedidos, puede ser dato atípico). CPL en junio: 9.0 d con muy poco volumen.</div>
+  <div class="insight insight-amber" id="insight-2">
+    <div class="insight-title" id="insight-2-title">—</div>
+    <div class="insight-body" id="insight-2-body">—</div>
   </div>
 
   <div class="row2">
@@ -196,7 +196,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
       <div class="card-title">Ciclo por tipo de pedido — evolución mensual (días)</div>
       <div class="card-sub">Solo tipos con volumen significativo · promedio ponderado real</div>
       <table>
-        <thead><tr><th>Tipo</th><th class="r">Pedidos</th><th class="r">Abr</th><th class="r">May</th><th class="r">Jun</th><th>Tendencia</th><th>Ciclo global</th></tr></thead>
+        <thead><tr id="res-ciclo-thead"></tr></thead>
         <tbody id="res-ciclo-tabla"></tbody>
       </table>
     </div>
@@ -209,9 +209,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
     <label>Mes:</label>
     <select id="c-mes-sel" onchange="renderCiclo()">
       <option value="todos">Todos</option>
-      <option value="2026-04">Abril</option>
-      <option value="2026-05">Mayo</option>
-      <option value="2026-06">Junio</option>
     </select>
     <label>Tipo:</label>
     <select id="c-tipo-sel" onchange="renderCiclo()">
@@ -325,9 +322,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
     <label>Mes:</label>
     <select id="p-mes-sel" onchange="renderPicking()">
       <option value="todos">Todos</option>
-      <option value="2026-04">Abril</option>
-      <option value="2026-05">Mayo</option>
-      <option value="2026-06">Junio</option>
     </select>
   </div>
   <div class="mini-stats" id="pick-mini"></div>
@@ -394,12 +388,12 @@ function updateFilterIndicator(){
   const lbl = document.getElementById('global-filter-label');
   const parts = [];
   if(GF.tipo) parts.push(GF.tipo);
-  if(GF.mes) parts.push({'2026-04':'Abr','2026-05':'May','2026-06':'Jun'}[GF.mes]||GF.mes);
+  if(GF.mes) parts.push(ml(GF.mes));
   if(parts.length){ ind.style.display='inline-flex'; lbl.innerHTML=`Filtro: <strong>${parts.join(' · ')}</strong>`; }
   else { ind.style.display='none'; }
 }
 
-function activeMeses(){ return GF.mes ? [GF.mes] : ['2026-04','2026-05','2026-06']; }
+function activeMeses(){ return GF.mes ? [GF.mes] : MESES_CICLO; }
 function activeTipos(){ return GF.tipo ? [GF.tipo] : null; }
 
 function filterRows(rows, mesCol='Mes', tipoCol='Documento'){
@@ -503,16 +497,17 @@ function renderStack(mode){
   const sc8=['#4a8fff','#36c97a','#f5a524','#9b7cf4','#f25757','#2dd4bf','#fb923c','#a3e635'];
 
   // Siempre datos completos — sin filtrar
+  const mesesVacio = () => Object.fromEntries(MESES_CICLO.map(m=>[m,0]));
   const allData = mode==='ped'
     ? (()=>{
         const m={};
-        D.ciclo_mes_tipo.forEach(r=>{ if(!m[r.Documento])m[r.Documento]={'2026-04':0,'2026-05':0,'2026-06':0}; m[r.Documento][r.Mes]+=r.pedidos; });
+        D.ciclo_mes_tipo.forEach(r=>{ if(!m[r.Documento])m[r.Documento]=mesesVacio(); m[r.Documento][r.Mes]+=r.pedidos; });
         return Object.entries(m).sort((a,b)=>Object.values(b[1]).reduce((s,v)=>s+v,0)-Object.values(a[1]).reduce((s,v)=>s+v,0)).slice(0,8).map(([k,v])=>({t:k,...v}));
       })()
     : (()=>{
         const m={};
-        D.uds_mes_tipo.forEach(r=>{ if(!m[r.Documento])m[r.Documento]={'2026-04':0,'2026-05':0,'2026-06':0}; m[r.Documento][r.Mes]+=r.Unidades; });
-        return Object.entries(m).sort((a,b)=>Object.values(b[1]).reduce((s,v)=>s+v,0)-Object.values(a[1]).reduce((s,v)=>s+v,0)).slice(0,8).map(([k,v])=>({t:k,'2026-04':+(v['2026-04']/1000).toFixed(1),'2026-05':+(v['2026-05']/1000).toFixed(1),'2026-06':+(v['2026-06']/1000).toFixed(1)}));
+        D.uds_mes_tipo.forEach(r=>{ if(!m[r.Documento])m[r.Documento]=mesesVacio(); m[r.Documento][r.Mes]+=r.Unidades; });
+        return Object.entries(m).sort((a,b)=>Object.values(b[1]).reduce((s,v)=>s+v,0)-Object.values(a[1]).reduce((s,v)=>s+v,0)).slice(0,8).map(([k,v])=>({t:k,...Object.fromEntries(MESES_CICLO.map(mes=>[mes,+(v[mes]/1000).toFixed(1)]))}));
       })();
 
   const yFmt = mode==='ped'
@@ -532,10 +527,10 @@ function renderStack(mode){
     charts['c-res-stack'] = new Chart(document.getElementById('c-res-stack'),{
       type:'bar',
       data:{
-        labels:['Abr','May','Jun'],
+        labels: MESES_CICLO.map(ml),
         datasets: allData.map((r,i)=>({
           label:r.t,
-          data:['2026-04','2026-05','2026-06'].map(m=>r[m]||0),
+          data: MESES_CICLO.map(m=>r[m]||0),
           backgroundColor: !hl||r.t===hl ? sc8[i] : h2r(sc8[i],0.1),
           borderSkipped:false
         }))
@@ -554,7 +549,7 @@ function renderStack(mode){
   // Precalcular totales por tipo para mostrarlos en la leyenda
   const totalPorTipo = {};
   allData.forEach(r=>{
-    totalPorTipo[r.t] = ['2026-04','2026-05','2026-06'].reduce((s,m)=>s+(r[m]||0), 0);
+    totalPorTipo[r.t] = MESES_CICLO.reduce((s,m)=>s+(r[m]||0), 0);
   });
   const grandTotal = Object.values(totalPorTipo).reduce((a,b)=>a+b, 0);
 
@@ -581,8 +576,8 @@ function renderStack(mode){
       if(hl){
         const r = allData.find(x=>x.t===hl);
         const i = allData.indexOf(r);
-        const vals = ['2026-04','2026-05','2026-06'].map(m=>r[m]||0);
-        const labels = ['Abr','May','Jun'];
+        const vals = MESES_CICLO.map(m=>r[m]||0);
+        const labels = MESES_CICLO.map(ml);
         panel.style.display='block';
         panel.innerHTML = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span style="font-size:12px;font-weight:600;color:${sc8[i]};">${hl}</span>
@@ -618,9 +613,37 @@ const INV      = {"inv_det": [{"Consecutivo": 13, "Nombre": "Inventario vestidos
 
 const PICK     = {"pick_mes": [{"Mes": "2026-04", "jornadas": 76, "pedidos": 2223, "unidades": 127694, "minutos": 27368.2, "uds_x_min": 4.67}, {"Mes": "2026-05", "jornadas": 76, "pedidos": 2671, "unidades": 142809, "minutos": 25517.39, "uds_x_min": 5.6}, {"Mes": "2026-06", "jornadas": 72, "pedidos": 3273, "unidades": 129201, "minutos": 20216.65, "uds_x_min": 6.39}, {"Mes": "2026-07", "jornadas": 15, "pedidos": 626, "unidades": 37518, "minutos": 3286.11, "uds_x_min": 11.42}], "pick_op_mes": [{"Mes": "2026-04", "Nombre": "Abelardo Botero", "jornadas": 5, "unidades": 929, "minutos": 134.86, "uds_hora": 413.3, "uds_x_min": 6.89}, {"Mes": "2026-04", "Nombre": "Alejandro Herrera Zapata", "jornadas": 20, "unidades": 33172, "minutos": 8115.94, "uds_hora": 245.2, "uds_x_min": 4.09}, {"Mes": "2026-04", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 128, "minutos": 117.35, "uds_hora": 65.4, "uds_x_min": 1.09}, {"Mes": "2026-04", "Nombre": "Esteban Montoya Cacante", "jornadas": 5, "unidades": 132, "minutos": 899.78, "uds_hora": 8.8, "uds_x_min": 0.15}, {"Mes": "2026-04", "Nombre": "Fabian Hernandez", "jornadas": 20, "unidades": 30691, "minutos": 8536.24, "uds_hora": 215.7, "uds_x_min": 3.6}, {"Mes": "2026-04", "Nombre": "Juan Pablo Sáenz", "jornadas": 2, "unidades": 1118, "minutos": 42.48, "uds_hora": 1579.1, "uds_x_min": 26.32}, {"Mes": "2026-04", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 51617, "minutos": 8410.42, "uds_hora": 368.2, "uds_x_min": 6.14}, {"Mes": "2026-04", "Nombre": "Santiago Ayala Cardenas", "jornadas": 5, "unidades": 9640, "minutos": 992.9, "uds_hora": 582.5, "uds_x_min": 9.71}, {"Mes": "2026-04", "Nombre": "Yojan Olvery Betancur Ospina", "jornadas": 1, "unidades": 267, "minutos": 118.23, "uds_hora": 135.5, "uds_x_min": 2.26}, {"Mes": "2026-05", "Nombre": "Abelardo Botero", "jornadas": 15, "unidades": 10609, "minutos": 2204.75, "uds_hora": 288.7, "uds_x_min": 4.81}, {"Mes": "2026-05", "Nombre": "Alejandro Herrera Zapata", "jornadas": 5, "unidades": 6152, "minutos": 1184.25, "uds_hora": 311.7, "uds_x_min": 5.19}, {"Mes": "2026-05", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 9, "minutos": 71.68, "uds_hora": 7.5, "uds_x_min": 0.13}, {"Mes": "2026-05", "Nombre": "Esteban Montoya Cacante", "jornadas": 5, "unidades": 73, "minutos": 391.35, "uds_hora": 11.2, "uds_x_min": 0.19}, {"Mes": "2026-05", "Nombre": "Fabian Hernandez", "jornadas": 18, "unidades": 46889, "minutos": 7777.85, "uds_hora": 361.7, "uds_x_min": 6.03}, {"Mes": "2026-05", "Nombre": "Johan Smith Carmona Hernandez", "jornadas": 12, "unidades": 26021, "minutos": 4746.4, "uds_hora": 328.9, "uds_x_min": 5.48}, {"Mes": "2026-05", "Nombre": "Juan Fernando Gallego", "jornadas": 2, "unidades": 13560, "minutos": 396.85, "uds_hora": 2050.1, "uds_x_min": 34.17}, {"Mes": "2026-05", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 38597, "minutos": 8607.88, "uds_hora": 269.0, "uds_x_min": 4.48}, {"Mes": "2026-05", "Nombre": "Santiago Ayala Cardenas", "jornadas": 1, "unidades": 899, "minutos": 136.38, "uds_hora": 395.5, "uds_x_min": 6.59}, {"Mes": "2026-06", "Nombre": "Abelardo Botero", "jornadas": 10, "unidades": 29739, "minutos": 681.51, "uds_hora": 2618.2, "uds_x_min": 43.64}, {"Mes": "2026-06", "Nombre": "Alejandro Herrera Zapata", "jornadas": 3, "unidades": 648, "minutos": 205.24, "uds_hora": 189.4, "uds_x_min": 3.16}, {"Mes": "2026-06", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 89, "minutos": 44.6, "uds_hora": 119.7, "uds_x_min": 2.0}, {"Mes": "2026-06", "Nombre": "Esteban Montoya Cacante", "jornadas": 4, "unidades": 14, "minutos": 210.63, "uds_hora": 4.0, "uds_x_min": 0.07}, {"Mes": "2026-06", "Nombre": "Fabian Hernandez", "jornadas": 17, "unidades": 19349, "minutos": 4227.08, "uds_hora": 274.6, "uds_x_min": 4.58}, {"Mes": "2026-06", "Nombre": "Johan Smith Carmona Hernandez", "jornadas": 15, "unidades": 28506, "minutos": 6009.26, "uds_hora": 284.6, "uds_x_min": 4.74}, {"Mes": "2026-06", "Nombre": "Juan Pablo Sáenz", "jornadas": 1, "unidades": 150, "minutos": 18.25, "uds_hora": 493.2, "uds_x_min": 8.22}, {"Mes": "2026-06", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 48151, "minutos": 8095.55, "uds_hora": 356.9, "uds_x_min": 5.95}, {"Mes": "2026-06", "Nombre": "Santiago Ayala Cardenas", "jornadas": 3, "unidades": 2554, "minutos": 724.53, "uds_hora": 211.5, "uds_x_min": 3.53}, {"Mes": "2026-06", "Nombre": "Santiago Montoya Montoya", "jornadas": 1, "unidades": 1, "minutos": 0.0, "uds_hora": 0, "uds_x_min": 0}, {"Mes": "2026-07", "Nombre": "Abelardo Botero", "jornadas": 2, "unidades": 445, "minutos": 55.38, "uds_hora": 482.1, "uds_x_min": 8.04}, {"Mes": "2026-07", "Nombre": "Alejandro Herrera Zapata", "jornadas": 2, "unidades": 2539, "minutos": 539.36, "uds_hora": 282.4, "uds_x_min": 4.71}, {"Mes": "2026-07", "Nombre": "Esteban Montoya Cacante", "jornadas": 2, "unidades": 11, "minutos": 72.7, "uds_hora": 9.1, "uds_x_min": 0.15}, {"Mes": "2026-07", "Nombre": "Fabian Hernandez", "jornadas": 3, "unidades": 6868, "minutos": 1283.09, "uds_hora": 321.2, "uds_x_min": 5.35}, {"Mes": "2026-07", "Nombre": "Juan Fernando Gallego", "jornadas": 2, "unidades": 15051, "minutos": 125.37, "uds_hora": 7203.2, "uds_x_min": 120.05}, {"Mes": "2026-07", "Nombre": "Samuel Jimenez Arenas", "jornadas": 3, "unidades": 11504, "minutos": 1149.24, "uds_hora": 600.6, "uds_x_min": 10.01}, {"Mes": "2026-07", "Nombre": "Santiago Ayala Cardenas", "jornadas": 1, "unidades": 1100, "minutos": 60.97, "uds_hora": 1082.5, "uds_x_min": 18.04}]};
 
-const ML = {"2026-01":"Ene","2026-02":"Feb","2026-03":"Mar","2026-04":"Abr","2026-05":"May","2026-06":"Jun","2026-07":"Jul","2026-08":"Ago","2026-09":"Sep","2026-10":"Oct","2026-11":"Nov","2026-12":"Dic"};
 const TIPO_COL = ["#4a8fff","#36c97a","#f5a524","#9b7cf4","#f25757","#2dd4bf","#e879f9","#fb923c","#a3e635","#67e8f9","#fbbf24","#a78bfa","#34d399","#f87171"];
 const charts={};
+
+// ── MESES DINÁMICOS ──────────────────────────────────────
+// Deriva la etiqueta de mes directamente del string "YYYY-MM" — no depende
+// de una tabla fija por año, así que sirve igual para cualquier año/mes.
+const MESES_ABR   = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const MESES_FULL  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+function ml(m){
+  if(!m) return m;
+  const p = String(m).split('-');
+  if(p.length!==2) return m;
+  const idx = +p[1]-1;
+  return MESES_ABR[idx]!==undefined ? MESES_ABR[idx] : m;
+}
+function mesCompleto(m){
+  if(!m) return m;
+  const p = String(m).split('-');
+  if(p.length!==2) return m;
+  const idx = +p[1]-1;
+  return MESES_FULL[idx]!==undefined ? MESES_FULL[idx] : m;
+}
+function mesAnio(m){
+  if(!m) return m;
+  const p = String(m).split('-');
+  return p.length===2 ? `${ml(m)} ${p[0]}` : m;
+}
+// Todos los meses presentes en los datos reales (orden cronológico) — fuente
+// única de verdad para selects, filtros y columnas de tablas de evolución.
+const MESES_CICLO = D.meses || [];
+const MESES_PICK  = [...new Set((PICK.pick_mes||[]).map(m=>m.Mes))].sort();
 
 function fmt(n,d=2){return n==null?'—':Number(n).toFixed(d);}
 function fmtK(n){if(n>=1e6)return (n/1e6).toFixed(1)+'M';if(n>=1e3)return (n/1e3).toFixed(0)+'K';return n.toLocaleString('es-CO');}
@@ -651,7 +674,7 @@ function renderResumen(){
 
   // Ciclo ponderado filtrado
   const mesPondFilt = D.mes_pond.filter(m=>meses.includes(m.Mes));
-  const mesLabels   = mesPondFilt.map(m=>ML[m.Mes]);
+  const mesLabels   = mesPondFilt.map(m=>ml(m.Mes));
   let promData = mesPondFilt.map(m=>m.promedio);
   let medData  = mesPondFilt.map(m=>m.mediana);
   if(tipos){
@@ -675,7 +698,7 @@ function renderResumen(){
   // Picking tendencia filtrada por mes
   const pickFilt = PICK.pick_mes.filter(m=>meses.includes(m.Mes));
   mkChart('c-res-pick',{type:'line',data:{
-    labels: pickFilt.map(m=>ML[m.Mes]),
+    labels: pickFilt.map(m=>ml(m.Mes)),
     datasets:[
       {data:pickFilt.map(m=>m.uds_x_min),borderColor:'#4a8fff',backgroundColor:'rgba(74,143,255,0.1)',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:'#4a8fff',borderWidth:2},
       {data:pickFilt.map(()=>5.5),borderColor:'#f5a524',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}
@@ -686,16 +709,22 @@ function renderResumen(){
   renderDonut(donutMode||'ped');
   renderStack(stackMode||'ped');
 
+  // Tabla evolución — encabezado dinámico según los meses reales de los datos
+  document.getElementById('res-ciclo-thead').innerHTML =
+    '<th>Tipo</th><th class="r">Pedidos</th>' +
+    MESES_CICLO.map(m=>`<th class="r">${ml(m)}</th>`).join('') +
+    '<th>Tendencia</th><th>Ciclo global</th>';
+
   // Tabla evolución — filtrar por tipos del slicer
   let tiposVolumen = D.ciclo_global.filter(t=>t.pedidos>=30);
   if(tipos) tiposVolumen = tiposVolumen.filter(t=>tipos.includes(t.Documento));
   tiposVolumen.sort((a,b)=>b.pedidos-a.pedidos);
   const rows = tiposVolumen.map(tg => {
-    const apr = D.ciclo_mes_tipo.find(r=>r.Mes==='2026-04'&&r.Documento===tg.Documento);
-    const may = D.ciclo_mes_tipo.find(r=>r.Mes==='2026-05'&&r.Documento===tg.Documento);
-    const jun = D.ciclo_mes_tipo.find(r=>r.Mes==='2026-06'&&r.Documento===tg.Documento);
-    const vals = [apr,may,jun].map(r=>r?.promedio??null);
-    const mesesCols = ['2026-04','2026-05','2026-06'].map((m,i)=>{
+    const vals = MESES_CICLO.map(m=>{
+      const r = D.ciclo_mes_tipo.find(x=>x.Mes===m&&x.Documento===tg.Documento);
+      return r ? r.promedio : null;
+    });
+    const mesesCols = MESES_CICLO.map((m,i)=>{
       const v=vals[i]; const dim=!meses.includes(m)?'opacity:0.3;':'';
       return `<td class="r" style="color:${v!=null?cicloColor(v):'var(--text3)'};${dim}">${v!=null?fmt(v,2)+'d':'—'}</td>`;
     });
@@ -711,7 +740,125 @@ function renderResumen(){
       <td>${cicloSem(tg.promedio)} ${fmt(tg.promedio,2)}d</td>
     </tr>`;
   });
-  document.getElementById('res-ciclo-tabla').innerHTML=rows.join('') || '<tr><td colspan="7" style="color:var(--text3);text-align:center;padding:1rem;">Sin datos para el filtro seleccionado</td></tr>';
+  const colspanTotal = 4 + MESES_CICLO.length;
+  document.getElementById('res-ciclo-tabla').innerHTML=rows.join('') || `<tr><td colspan="${colspanTotal}" style="color:var(--text3);text-align:center;padding:1rem;">Sin datos para el filtro seleccionado</td></tr>`;
+
+  renderResumenKPIs();
+}
+
+// ── RESUMEN: KPIs e insights dinámicos ──────────────────────
+function renderResumenKPIs(){
+  const mp = D.mes_pond; // cronológico completo, sin filtro de slicer
+  const mpFirst = mp[0], mpLast = mp[mp.length-1];
+
+  // KPI 1 — Ciclo promedio
+  const kpiCiclo = document.getElementById('kpi-ciclo');
+  if(mpLast){
+    document.getElementById('kpi-ciclo-lbl').textContent = `Ciclo promedio ${ml(mpLast.Mes)}`;
+    document.getElementById('kpi-ciclo-val').textContent = fmt(mpLast.promedio,2)+' d';
+    let sub = '—', cls = 'c-blue', color = 'var(--text)';
+    if(mp.length>1 && mpFirst.promedio>0){
+      const delta = mpLast.promedio - mpFirst.promedio;
+      const pct = Math.abs(delta/mpFirst.promedio*100).toFixed(0);
+      const mejora = delta<0;
+      sub = `${mejora?'↓':'↑'} vs ${fmt(mpFirst.promedio,1)}d de ${mesCompleto(mpFirst.Mes).toLowerCase()} · ${mejora?'mejora':'aumento'} del ${pct}%`;
+      cls = mejora ? 'c-green' : 'c-red';
+      color = mejora ? 'var(--green)' : 'var(--red)';
+    }
+    document.getElementById('kpi-ciclo-sub').textContent = sub;
+    document.getElementById('kpi-ciclo-val').style.color = color;
+    kpiCiclo.className = 'kpi ' + cls;
+  }
+
+  // KPI 2 — Confiabilidad inventario (ponderada por contenedores, todos los meses)
+  const km = INV.kpi_meses || [];
+  const totalCont = km.reduce((s,m)=>s+m.contenedores,0);
+  const overallConf = totalCont>0 ? km.reduce((s,m)=>s+m.conf_pct*m.contenedores,0)/totalCont : 0;
+  document.getElementById('kpi-conf-val').textContent = km.length ? fmt(overallConf,1)+'%' : '—';
+  document.getElementById('kpi-conf-val').style.color = km.length ? cc(overallConf) : 'inherit';
+  document.getElementById('kpi-conf-sub').textContent = km.slice(-3).map(m=>`${ml(m.Mes)} ${fmt(m.conf_pct,1)}%`).join(' · ') || '—';
+
+  // KPI 3 — Picking uds/min
+  const pm = PICK.pick_mes || [];
+  const pmFirst = pm[0], pmLast = pm[pm.length-1];
+  const kpiPick = document.getElementById('kpi-pick');
+  if(pmLast){
+    document.getElementById('kpi-pick-lbl').textContent = `Picking uds/min · ${ml(pmLast.Mes)}`;
+    document.getElementById('kpi-pick-val').textContent = fmt(pmLast.uds_x_min,2);
+    let sub = '—', cls = 'c-blue', color = 'var(--text)';
+    if(pm.length>1 && pmFirst.uds_x_min>0){
+      const delta = pmLast.uds_x_min - pmFirst.uds_x_min;
+      const pct = Math.abs(delta/pmFirst.uds_x_min*100).toFixed(0);
+      const mejora = delta>0;
+      sub = `${mejora?'↑':'↓'} vs ${fmt(pmFirst.uds_x_min,1)} de ${mesCompleto(pmFirst.Mes).toLowerCase()} · ${mejora?'mejora':'caída'} del ${pct}%`;
+      cls = mejora ? 'c-green' : 'c-red';
+      color = mejora ? 'var(--green)' : 'var(--red)';
+    }
+    document.getElementById('kpi-pick-sub').textContent = sub;
+    document.getElementById('kpi-pick-val').style.color = color;
+    kpiPick.className = 'kpi ' + cls;
+  }
+
+  // KPI 4 — Pedidos procesados
+  const totalPedidos = mp.reduce((s,m)=>s+m.pedidos,0);
+  document.getElementById('kpi-ped-val').textContent = totalPedidos.toLocaleString('es-CO');
+  document.getElementById('kpi-ped-sub').textContent = mp.map(m=>`${ml(m.Mes)} ${m.pedidos.toLocaleString('es-CO')}`).join(' · ') || '—';
+
+  // Insight 1 — tendencia general del ciclo
+  const ins1t = document.getElementById('insight-1');
+  if(mp.length>=2 && mpFirst.promedio>0){
+    const pctCiclo = (mpFirst.promedio-mpLast.promedio)/mpFirst.promedio*100;
+    const mejora = pctCiclo>0;
+    const secuencia = mp.map(m=>fmt(m.promedio,1)+' días en '+mesCompleto(m.Mes).toLowerCase()).join(' → ');
+    const topTipo = [...D.ciclo_global].filter(t=>t.pedidos>=10).sort((a,b)=>b.pedidos-a.pedidos)[0];
+    let tipoTxt = '';
+    if(topTipo){
+      const serieTipo = mp.map(m=>{
+        const r = D.ciclo_mes_tipo.find(x=>x.Mes===m.Mes&&x.Documento===topTipo.Documento);
+        return r ? fmt(r.promedio,1) : '—';
+      }).join(' → ');
+      tipoTxt = ` ${mejora?'La mejora es liderada':'El deterioro está marcado'} por <strong style="color:var(--text);">${topTipo.Documento}</strong> (el tipo de mayor volumen), que pasó de ${serieTipo} días.`;
+    }
+    const pickTxt = pm.length>1 ? ` El picking ${pmLast.uds_x_min>=pmFirst.uds_x_min?'acompaña':'no acompaña'}: de ${pm.map(m=>fmt(m.uds_x_min,1)).join(' → ')} u/min.` : '';
+    document.getElementById('insight-1-title').textContent = mejora
+      ? '✓ La operación SÍ está mejorando su ciclo de pedido'
+      : '⚠ El ciclo de pedido está empeorando';
+    document.getElementById('insight-1-body').innerHTML =
+      `El ciclo ponderado real pasó de ${secuencia}. ${mejora?'Una reducción':'Un aumento'} del ${Math.abs(pctCiclo).toFixed(0)}% en ${mp.length} meses.${tipoTxt}${pickTxt}`;
+    ins1t.className = 'insight ' + (mejora ? 'insight-green' : 'insight-red');
+  } else {
+    document.getElementById('insight-1-title').textContent = 'Ciclo de pedido';
+    document.getElementById('insight-1-body').textContent = 'Aún no hay suficientes meses de datos reales para calcular una tendencia.';
+    ins1t.className = 'insight insight-amber';
+  }
+
+  // Insight 2 — tipos con ciclo elevado o en deterioro
+  const ins2 = document.getElementById('insight-2');
+  const malos = D.ciclo_global.filter(t=>t.pedidos>=30 && t.promedio>2)
+    .map(t=>{
+      const serie = mp.map(m=>{
+        const r = D.ciclo_mes_tipo.find(x=>x.Mes===m.Mes&&x.Documento===t.Documento);
+        return r ? r.promedio : null;
+      });
+      const first = serie.find(v=>v!=null), last=[...serie].reverse().find(v=>v!=null);
+      return {...t, serie, deteriorando: (first!=null&&last!=null&&last>first)};
+    })
+    .sort((a,b)=>b.promedio-a.promedio)
+    .slice(0,4);
+  if(malos.length){
+    const frases = malos.map(t=>{
+      const serieTxt = t.serie.map(v=>v!=null?fmt(v,1):'—').join(' → ');
+      return `<strong style="color:var(--text);">${t.Documento}</strong> (${serieTxt} d${t.pedidos<10?', poco volumen':''})`;
+    });
+    document.getElementById('insight-2-title').textContent = '⚠ Tipos con ciclo aún elevado o en deterioro';
+    document.getElementById('insight-2-body').innerHTML =
+      `${frases.join('; ')}.${malos.some(t=>t.deteriorando)?' Algunos empeoraron respecto al primer mes del período mostrado.':''}`;
+    ins2.className = 'insight insight-amber';
+  } else {
+    document.getElementById('insight-2-title').textContent = '✓ Todos los tipos con volumen significativo están dentro de rango';
+    document.getElementById('insight-2-body').textContent = 'No se identificaron tipos con ciclo elevado (>2d) o en deterioro en el período analizado.';
+    ins2.className = 'insight insight-green';
+  }
 }
 
 // ── CICLO TABLE SORT ────────────────────────────────────────
@@ -886,7 +1033,7 @@ function renderCiclo(){
   destroyChart('c-ciclo-evo');
   charts['c-ciclo-evo'] = new Chart(document.getElementById('c-ciclo-evo'), {
     type:'line',
-    data:{ labels:D.meses.map(m=>ML[m]), datasets:evoDatasets },
+    data:{ labels:D.meses.map(ml), datasets:evoDatasets },
     options:{
       responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}d`}}},
@@ -943,7 +1090,7 @@ function renderInventario(){
   mkChart('c-inv-evo',{
     type:'line',
     data:{
-      labels: invMeses.map(m=>ML[m]||m),
+      labels: invMeses.map(m=>ml(m)||m),
       datasets:[
         {label:'PT',     data:serieConf(accPT),     borderColor:'#36c97a', backgroundColor:'transparent', pointBackgroundColor:'#36c97a', tension:.35, pointRadius:4, borderWidth:2.5, spanGaps:true},
         {label:'MP',     data:serieConf(accMP),     borderColor:'#4a8fff', backgroundColor:'transparent', pointBackgroundColor:'#4a8fff', tension:.35, pointRadius:4, borderWidth:2.5, spanGaps:true},
@@ -966,7 +1113,7 @@ function renderInventario(){
   mkChart('c-inv-conteos',{
     type:'bar',
     data:{
-      labels: invMeses.map(m=>ML[m]||m),
+      labels: invMeses.map(m=>ml(m)||m),
       datasets:[
         {label:'PT', data:invMeses.map(m=>accPT[m].conteos), backgroundColor:'#36c97a', borderRadius:3, contenedores:invMeses.map(m=>accPT[m].contenedores)},
         {label:'MP', data:invMeses.map(m=>accMP[m].conteos), backgroundColor:'#4a8fff', borderRadius:3, contenedores:invMeses.map(m=>accMP[m].contenedores)},
@@ -990,7 +1137,7 @@ function renderInventario(){
 
   document.getElementById('inv-table').innerHTML=INV.inv_det.map(r=>`<tr>
     <td>${r.Consecutivo}</td><td>${r.Nombre}</td>
-    <td><span class="badge b-neu">${ML[r.Mes]||r.Mes} 2026</span></td>
+    <td><span class="badge b-neu">${mesAnio(r.Mes)}</span></td>
     <td class="r">${r.total}</td>
     <td class="r" style="color:#36c97a;">${r.iguales}</td>
     <td class="r" style="color:${r.faltantes>0?'#f25757':'#4a5168'};">${r.faltantes}</td>
@@ -1007,7 +1154,7 @@ function renderInventario(){
   const colConf=c=>c>=97?'var(--green)':c>=92?'var(--amber)':'var(--red)';
   document.getElementById('inv-kpi-grid').innerHTML = last2.map(m=>`
     <div class="kpi ${clsConf(m.conf_pct)}">
-      <div class="kpi-lbl">Confiabilidad ${ML[m.Mes]||m.Mes}</div>
+      <div class="kpi-lbl">Confiabilidad ${ml(m.Mes)||m.Mes}</div>
       <div class="kpi-val" style="color:${colConf(m.conf_pct)};">${fmt(m.conf_pct,1)}%</div>
       <div class="kpi-sub">${m.contenedores.toLocaleString('es-CO')} contenedores · ${m.conteos} conteos</div>
     </div>`).join('')+`
@@ -1030,7 +1177,7 @@ function renderInventario(){
     const detalle = ptDet.filter(r=>r.Mes===m.Mes).map(r=>`#${r.Consecutivo}: ${r.contenedores}`).join(' · ');
     const col = pct>=10?'var(--green)':pct>=5?'var(--amber)':'var(--red)';
     return `<div style="background:var(--bg3);border-radius:var(--rs);padding:14px 16px;">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">${ML[m.Mes]||m.Mes} 2026 · ${m.conteos} conteos cíclicos PT</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">${mesAnio(m.Mes)} · ${m.conteos} conteos cíclicos PT</div>
       <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;">
         <span style="font-size:24px;font-weight:700;color:${col};">${pct}%</span>
         <span style="font-size:12px;color:var(--text2);">${m.contenedores.toLocaleString('es-CO')} contenedores revisados</span>
@@ -1043,7 +1190,8 @@ function renderInventario(){
   }).join('');
 
   const colsCob = ptMes.length>1 ? `repeat(${ptMes.length},1fr)` : '1fr 1fr';
-  const mesLabels = ptMes.map(m=>ML[m.Mes]||m.Mes).join('–');
+  const mesLabels = ptMes.map(m=>ml(m.Mes)||m.Mes).join('–');
+  const aniosCob  = [...new Set(ptMes.map(m=>String(m.Mes).split('-')[0]))].join('/');
 
   const ptTabla = ptDet.map(r=>{
     const pctR = (r.contenedores/UNIVERSO_PT*100).toFixed(1);
@@ -1051,7 +1199,7 @@ function renderInventario(){
     const badgeCls = r.Mes===ptMes[ptMes.length-1]?.Mes?'b-red':'b-neu';
     return `<tr>
       <td>${r.Consecutivo}</td><td>${r.Nombre}</td>
-      <td><span class="badge ${badgeCls}">${ML[r.Mes]||r.Mes}</span></td>
+      <td><span class="badge ${badgeCls}">${ml(r.Mes)||r.Mes}</span></td>
       <td class="r">${r.contenedores}</td>
       <td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:${bw}%;background:var(--blue);"></div></div><span class="pct">${pctR}%</span></div></td>
       <td style="color:${colConf(r.conf_ref)};">${fmt(r.conf_ref,1)}%</td>
@@ -1063,7 +1211,7 @@ function renderInventario(){
   document.getElementById('inv-cobertura-body').innerHTML = `
     <div style="margin-bottom:20px;">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-        <span style="font-size:12px;color:var(--text2);">Cobertura acumulada cíclicos PT (${mesLabels} 2026)</span>
+        <span style="font-size:12px;color:var(--text2);">Cobertura acumulada cíclicos PT (${mesLabels} ${aniosCob})</span>
         <span style="font-size:13px;font-weight:600;color:${cobColor};">${cobPct}% <span style="font-size:11px;font-weight:400;color:var(--text3);">${totalRevisados.toLocaleString('es-CO')} revisados de ${UNIVERSO_PT.toLocaleString('es-CO')}</span></span>
       </div>
       <div style="height:10px;background:var(--bg3);border-radius:99px;overflow:hidden;">
@@ -1115,7 +1263,7 @@ function renderPicking(){
       </div>
     </div>`).join('');
 
-  mkChart('c-pick-trend',{type:'line',data:{labels:PICK.pick_mes.map(m=>ML[m.Mes]),datasets:[{data:PICK.pick_mes.map(m=>m.uds_x_min),borderColor:'#4a8fff',backgroundColor:'rgba(74,143,255,0.1)',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:'#4a8fff',borderWidth:2},{data:[5.5,5.5,5.5],borderColor:'#f5a524',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}]},options:{...gOpts(' u/m'),plugins:{legend:{display:false}}}});
+  mkChart('c-pick-trend',{type:'line',data:{labels:PICK.pick_mes.map(m=>ml(m.Mes)),datasets:[{data:PICK.pick_mes.map(m=>m.uds_x_min),borderColor:'#4a8fff',backgroundColor:'rgba(74,143,255,0.1)',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:'#4a8fff',borderWidth:2},{data:PICK.pick_mes.map(()=>5.5),borderColor:'#f5a524',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}]},options:{...gOpts(' u/m'),plugins:{legend:{display:false}}}});
 
   renderPickOpEvo();
   renderPickTable(mes);
@@ -1123,7 +1271,7 @@ function renderPicking(){
 
 function renderPickOpEvo(){
   const validOps = [...new Set(PICK.pick_op_mes.filter(r=>r.minutos>60&&r.uds_x_min<30).map(r=>r.Nombre))].sort();
-  const meses = ['2026-04','2026-05','2026-06'];
+  const meses = MESES_PICK;
 
   // Calcular global por operario para ordenar
   const opGlobal = validOps.map(n=>{
@@ -1139,7 +1287,7 @@ function renderPickOpEvo(){
       return (r&&r.minutos>60&&r.uds_x_min<30) ? r.uds_x_min : null;
     });
 
-    // Tendencia abr→jun
+    // Tendencia primer mes → último mes con datos
     const first = mesVals.find(v=>v!==null);
     const last  = [...mesVals].reverse().find(v=>v!==null);
     let trendHtml = '<span style="color:var(--text3);">—</span>';
@@ -1172,14 +1320,13 @@ function renderPickOpEvo(){
   // Fila de meta
   const metaCells = meses.map(()=>`<td class="r" style="color:var(--amber);font-style:italic;">5.50</td>`).join('');
 
+  const mesHeaders = meses.map(m=>`<th class="r">${ml(m)}</th>`).join('');
   document.getElementById('pick-op-evo-table').innerHTML = `
     <table>
       <thead>
         <tr>
           <th>Operario</th>
-          <th class="r">Abr</th>
-          <th class="r">May</th>
-          <th class="r">Jun</th>
+          ${mesHeaders}
           <th class="r">Global</th>
           <th>Tendencia</th>
         </tr>
@@ -1200,7 +1347,7 @@ function renderPickTable(mes){
   const filtOp=mes==='todos'?PICK.pick_op_mes:PICK.pick_op_mes.filter(r=>r.Mes===mes);
   document.getElementById('pick-table').innerHTML=filtOp.filter(r=>r.uds_x_min<30).sort((a,b)=>b.uds_x_min-a.uds_x_min).map(r=>`<tr>
     <td>${r.Nombre}</td>
-    <td><span class="badge b-neu">${ML[r.Mes]} 2026</span></td>
+    <td><span class="badge b-neu">${mesAnio(r.Mes)}</span></td>
     <td class="r">${r.jornadas}</td>
     <td class="r">${fmtK(r.unidades)}</td>
     <td class="r">${Math.round(r.minutos).toLocaleString('es-CO')}</td>
@@ -1210,6 +1357,23 @@ function renderPickTable(mes){
   </tr>`).join('');
 }
 
+// ── INIT: poblar selects de mes desde los datos reales ──────
+function initFiltrosMes(){
+  const cSel = document.getElementById('c-mes-sel');
+  MESES_CICLO.forEach(m=>{
+    const o = document.createElement('option');
+    o.value = m; o.textContent = mesCompleto(m);
+    cSel.appendChild(o);
+  });
+  const pSel = document.getElementById('p-mes-sel');
+  MESES_PICK.forEach(m=>{
+    const o = document.createElement('option');
+    o.value = m; o.textContent = mesCompleto(m);
+    pSel.appendChild(o);
+  });
+}
+
+initFiltrosMes();
 renderResumen();
 </script>
 </body>
