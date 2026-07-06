@@ -99,6 +99,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
     <button class="tab" onclick="showPage('ciclo',this)">Ciclo de Pedido</button>
     <button class="tab" onclick="showPage('inventario',this)">Confiabilidad Inv.</button>
     <button class="tab" onclick="showPage('picking',this)">Picking</button>
+    <button class="tab" onclick="showPage('indicadores',this)">Indicadores+</button>
   </div>
   <div class="topbar-right">
     <div id="global-filter-indicator" style="display:none;" class="filter-pill">
@@ -360,6 +361,69 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
   </div>
 </div>
 
+<!-- INDICADORES+ -->
+<div class="page" id="page-indicadores">
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
+    <div class="kpi c-blue" id="kpi-otif">
+      <div class="kpi-lbl">OTIF</div>
+      <div class="kpi-val" id="kpi-otif-val">—</div>
+      <div class="kpi-sub" id="kpi-otif-sub">—</div>
+    </div>
+    <div class="kpi c-blue" id="kpi-fillrate">
+      <div class="kpi-lbl">Fill Rate</div>
+      <div class="kpi-val" id="kpi-fillrate-val">—</div>
+      <div class="kpi-sub" id="kpi-fillrate-sub">—</div>
+    </div>
+    <div class="kpi c-blue" id="kpi-perfecto">
+      <div class="kpi-lbl">Pedido Perfecto</div>
+      <div class="kpi-val" id="kpi-perfecto-val">—</div>
+      <div class="kpi-sub" id="kpi-perfecto-sub">—</div>
+    </div>
+    <div class="kpi c-blue" id="kpi-vence6m">
+      <div class="kpi-lbl">PT vence ≤6 meses</div>
+      <div class="kpi-val" id="kpi-vence6m-val">—</div>
+      <div class="kpi-sub" id="kpi-vence6m-sub">—</div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="card-title">OTIF por mes</div>
+      <div class="card-sub">% pedidos entregados dentro de la promesa (2d express · 5d resto)</div>
+      <div style="position:relative;height:250px;"><canvas id="c-ind-otif" role="img" aria-label="OTIF por mes"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Fill Rate por tipo</div>
+      <div class="card-sub">Unidades preparadas / pedidas · pedidos completados</div>
+      <div style="position:relative;height:250px;"><canvas id="c-ind-fillrate" role="img" aria-label="Fill Rate por tipo"></canvas></div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="card-title">Pedido perfecto por tipo</div>
+      <div class="card-sub">% de pedidos con todas sus líneas 100% completas</div>
+      <div style="position:relative;height:250px;"><canvas id="c-ind-perfecto" role="img" aria-label="Pedido perfecto por tipo"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Aging de vencimientos · Almacenamiento PT</div>
+      <div class="card-sub">Unidades por proximidad a la fecha de vencimiento</div>
+      <div style="position:relative;height:250px;"><canvas id="c-ind-aging" role="img" aria-label="Aging de vencimientos PT"></canvas></div>
+    </div>
+  </div>
+
+  <div class="row-full">
+    <div class="card">
+      <div class="card-title">Top 10 productos con más unidades faltantes</div>
+      <div class="card-sub">Pedida − Preparada · pedidos completados (Empacado/Preparado)</div>
+      <table>
+        <thead><tr><th>Código</th><th>Descripción</th><th class="r">Faltante (uds)</th></tr></thead>
+        <tbody id="ind-faltantes-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── GLOBAL FILTER STATE ──────────────────────────────────────
 const GF = { tipo: null, mes: null };
@@ -412,6 +476,7 @@ function refreshAllPages(){
     else if(txt==='Ciclo de Pedido'){ if(typeof cicloSelectedTipo!=='undefined') cicloSelectedTipo=null; renderCiclo(); }
     else if(txt==='Confiabilidad Inv.') renderInventario();
     else if(txt==='Picking') renderPicking();
+    else if(txt==='Indicadores+') renderIndicadores();
   } catch(e){ console.warn('refreshAllPages error:', e.message); }
 }
 
@@ -613,6 +678,8 @@ const INV      = {"inv_det": [{"Consecutivo": 13, "Nombre": "Inventario vestidos
 
 const PICK     = {"pick_mes": [{"Mes": "2026-04", "jornadas": 76, "pedidos": 2223, "unidades": 127694, "minutos": 27368.2, "uds_x_min": 4.67}, {"Mes": "2026-05", "jornadas": 76, "pedidos": 2671, "unidades": 142809, "minutos": 25517.39, "uds_x_min": 5.6}, {"Mes": "2026-06", "jornadas": 72, "pedidos": 3273, "unidades": 129201, "minutos": 20216.65, "uds_x_min": 6.39}, {"Mes": "2026-07", "jornadas": 15, "pedidos": 626, "unidades": 37518, "minutos": 3286.11, "uds_x_min": 11.42}], "pick_op_mes": [{"Mes": "2026-04", "Nombre": "Abelardo Botero", "jornadas": 5, "unidades": 929, "minutos": 134.86, "uds_hora": 413.3, "uds_x_min": 6.89}, {"Mes": "2026-04", "Nombre": "Alejandro Herrera Zapata", "jornadas": 20, "unidades": 33172, "minutos": 8115.94, "uds_hora": 245.2, "uds_x_min": 4.09}, {"Mes": "2026-04", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 128, "minutos": 117.35, "uds_hora": 65.4, "uds_x_min": 1.09}, {"Mes": "2026-04", "Nombre": "Esteban Montoya Cacante", "jornadas": 5, "unidades": 132, "minutos": 899.78, "uds_hora": 8.8, "uds_x_min": 0.15}, {"Mes": "2026-04", "Nombre": "Fabian Hernandez", "jornadas": 20, "unidades": 30691, "minutos": 8536.24, "uds_hora": 215.7, "uds_x_min": 3.6}, {"Mes": "2026-04", "Nombre": "Juan Pablo Sáenz", "jornadas": 2, "unidades": 1118, "minutos": 42.48, "uds_hora": 1579.1, "uds_x_min": 26.32}, {"Mes": "2026-04", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 51617, "minutos": 8410.42, "uds_hora": 368.2, "uds_x_min": 6.14}, {"Mes": "2026-04", "Nombre": "Santiago Ayala Cardenas", "jornadas": 5, "unidades": 9640, "minutos": 992.9, "uds_hora": 582.5, "uds_x_min": 9.71}, {"Mes": "2026-04", "Nombre": "Yojan Olvery Betancur Ospina", "jornadas": 1, "unidades": 267, "minutos": 118.23, "uds_hora": 135.5, "uds_x_min": 2.26}, {"Mes": "2026-05", "Nombre": "Abelardo Botero", "jornadas": 15, "unidades": 10609, "minutos": 2204.75, "uds_hora": 288.7, "uds_x_min": 4.81}, {"Mes": "2026-05", "Nombre": "Alejandro Herrera Zapata", "jornadas": 5, "unidades": 6152, "minutos": 1184.25, "uds_hora": 311.7, "uds_x_min": 5.19}, {"Mes": "2026-05", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 9, "minutos": 71.68, "uds_hora": 7.5, "uds_x_min": 0.13}, {"Mes": "2026-05", "Nombre": "Esteban Montoya Cacante", "jornadas": 5, "unidades": 73, "minutos": 391.35, "uds_hora": 11.2, "uds_x_min": 0.19}, {"Mes": "2026-05", "Nombre": "Fabian Hernandez", "jornadas": 18, "unidades": 46889, "minutos": 7777.85, "uds_hora": 361.7, "uds_x_min": 6.03}, {"Mes": "2026-05", "Nombre": "Johan Smith Carmona Hernandez", "jornadas": 12, "unidades": 26021, "minutos": 4746.4, "uds_hora": 328.9, "uds_x_min": 5.48}, {"Mes": "2026-05", "Nombre": "Juan Fernando Gallego", "jornadas": 2, "unidades": 13560, "minutos": 396.85, "uds_hora": 2050.1, "uds_x_min": 34.17}, {"Mes": "2026-05", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 38597, "minutos": 8607.88, "uds_hora": 269.0, "uds_x_min": 4.48}, {"Mes": "2026-05", "Nombre": "Santiago Ayala Cardenas", "jornadas": 1, "unidades": 899, "minutos": 136.38, "uds_hora": 395.5, "uds_x_min": 6.59}, {"Mes": "2026-06", "Nombre": "Abelardo Botero", "jornadas": 10, "unidades": 29739, "minutos": 681.51, "uds_hora": 2618.2, "uds_x_min": 43.64}, {"Mes": "2026-06", "Nombre": "Alejandro Herrera Zapata", "jornadas": 3, "unidades": 648, "minutos": 205.24, "uds_hora": 189.4, "uds_x_min": 3.16}, {"Mes": "2026-06", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 89, "minutos": 44.6, "uds_hora": 119.7, "uds_x_min": 2.0}, {"Mes": "2026-06", "Nombre": "Esteban Montoya Cacante", "jornadas": 4, "unidades": 14, "minutos": 210.63, "uds_hora": 4.0, "uds_x_min": 0.07}, {"Mes": "2026-06", "Nombre": "Fabian Hernandez", "jornadas": 17, "unidades": 19349, "minutos": 4227.08, "uds_hora": 274.6, "uds_x_min": 4.58}, {"Mes": "2026-06", "Nombre": "Johan Smith Carmona Hernandez", "jornadas": 15, "unidades": 28506, "minutos": 6009.26, "uds_hora": 284.6, "uds_x_min": 4.74}, {"Mes": "2026-06", "Nombre": "Juan Pablo Sáenz", "jornadas": 1, "unidades": 150, "minutos": 18.25, "uds_hora": 493.2, "uds_x_min": 8.22}, {"Mes": "2026-06", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 48151, "minutos": 8095.55, "uds_hora": 356.9, "uds_x_min": 5.95}, {"Mes": "2026-06", "Nombre": "Santiago Ayala Cardenas", "jornadas": 3, "unidades": 2554, "minutos": 724.53, "uds_hora": 211.5, "uds_x_min": 3.53}, {"Mes": "2026-06", "Nombre": "Santiago Montoya Montoya", "jornadas": 1, "unidades": 1, "minutos": 0.0, "uds_hora": 0, "uds_x_min": 0}, {"Mes": "2026-07", "Nombre": "Abelardo Botero", "jornadas": 2, "unidades": 445, "minutos": 55.38, "uds_hora": 482.1, "uds_x_min": 8.04}, {"Mes": "2026-07", "Nombre": "Alejandro Herrera Zapata", "jornadas": 2, "unidades": 2539, "minutos": 539.36, "uds_hora": 282.4, "uds_x_min": 4.71}, {"Mes": "2026-07", "Nombre": "Esteban Montoya Cacante", "jornadas": 2, "unidades": 11, "minutos": 72.7, "uds_hora": 9.1, "uds_x_min": 0.15}, {"Mes": "2026-07", "Nombre": "Fabian Hernandez", "jornadas": 3, "unidades": 6868, "minutos": 1283.09, "uds_hora": 321.2, "uds_x_min": 5.35}, {"Mes": "2026-07", "Nombre": "Juan Fernando Gallego", "jornadas": 2, "unidades": 15051, "minutos": 125.37, "uds_hora": 7203.2, "uds_x_min": 120.05}, {"Mes": "2026-07", "Nombre": "Samuel Jimenez Arenas", "jornadas": 3, "unidades": 11504, "minutos": 1149.24, "uds_hora": 600.6, "uds_x_min": 10.01}, {"Mes": "2026-07", "Nombre": "Santiago Ayala Cardenas", "jornadas": 1, "unidades": 1100, "minutos": 60.97, "uds_hora": 1082.5, "uds_x_min": 18.04}]};
 
+const IND      = {"otif_mes": [{"Mes": "2026-04", "pedidos": 1860, "on_time": 776, "otif_pct": 41.7}, {"Mes": "2026-05", "pedidos": 2752, "on_time": 2144, "otif_pct": 77.9}, {"Mes": "2026-06", "pedidos": 2457, "on_time": 2083, "otif_pct": 84.8}, {"Mes": "2026-07", "pedidos": 332, "on_time": 332, "otif_pct": 100.0}], "otif_tipo": [{"Documento": "CPW", "pedidos": 5205, "on_time": 3670, "promesa_dias": 2, "otif_pct": 70.5}, {"Documento": "CPF", "pedidos": 630, "on_time": 482, "promesa_dias": 5, "otif_pct": 76.5}, {"Documento": "CPV", "pedidos": 421, "on_time": 240, "promesa_dias": 5, "otif_pct": 57.0}, {"Documento": "CRB", "pedidos": 341, "on_time": 283, "promesa_dias": 2, "otif_pct": 83.0}, {"Documento": "CRI", "pedidos": 229, "on_time": 222, "promesa_dias": 2, "otif_pct": 96.9}, {"Documento": "CPS", "pedidos": 197, "on_time": 104, "promesa_dias": 2, "otif_pct": 52.8}, {"Documento": "CPE", "pedidos": 137, "on_time": 135, "promesa_dias": 2, "otif_pct": 98.5}, {"Documento": "CPG", "pedidos": 95, "on_time": 74, "promesa_dias": 5, "otif_pct": 77.9}, {"Documento": "CRT", "pedidos": 85, "on_time": 72, "promesa_dias": 2, "otif_pct": 84.7}, {"Documento": "CPZ", "pedidos": 27, "on_time": 26, "promesa_dias": 2, "otif_pct": 96.3}, {"Documento": "CRK", "pedidos": 16, "on_time": 15, "promesa_dias": 2, "otif_pct": 93.8}, {"Documento": "CPL", "pedidos": 12, "on_time": 9, "promesa_dias": 5, "otif_pct": 75.0}], "otif_pct_global": 72.1, "fillrate_tipo": [{"Documento": "CPW", "pedida": 478, "preparada": 381, "fill_rate": 79.7, "pedidos": 196, "perfectos": 99, "pedido_perfecto_pct": 50.5}, {"Documento": "CPF", "pedida": 71, "preparada": 43, "fill_rate": 60.6, "pedidos": 28, "perfectos": 0, "pedido_perfecto_pct": 0.0}, {"Documento": "CRB", "pedida": 160, "preparada": 160, "fill_rate": 100.0, "pedidos": 16, "perfectos": 16, "pedido_perfecto_pct": 100.0}, {"Documento": "CPV", "pedida": 2093, "preparada": 2000, "fill_rate": 95.6, "pedidos": 4, "perfectos": 2, "pedido_perfecto_pct": 50.0}, {"Documento": "CPG", "pedida": 756, "preparada": 732, "fill_rate": 96.8, "pedidos": 2, "perfectos": 1, "pedido_perfecto_pct": 50.0}, {"Documento": "CPY", "pedida": 15131, "preparada": 15051, "fill_rate": 99.5, "pedidos": 1, "perfectos": 0, "pedido_perfecto_pct": 0.0}, {"Documento": "CPE", "pedida": 2, "preparada": 2, "fill_rate": 100.0, "pedidos": 1, "perfectos": 1, "pedido_perfecto_pct": 100.0}, {"Documento": "CRT", "pedida": 448, "preparada": 55, "fill_rate": 12.3, "pedidos": 1, "perfectos": 0, "pedido_perfecto_pct": 0.0}], "fill_rate_global": 96.3, "pedido_perfecto_pct_global": 47.8, "faltante_prod": [{"Producto": "SERV01", "Descripcion": "ENVIO DE PRODUCTOS", "faltante": 125}, {"Producto": "R010102", "Descripcion": "SHAMPOO VARIEDAD ROMERO LA RECETA", "faltante": 125}, {"Producto": "D031003", "Descripcion": "BRONCEADOR DE ZANAHORIA Y CANELA DLUCHI", "faltante": 72}, {"Producto": "C031001", "Descripcion": "BRONCEADOR CHOCOLATE Y MIEL VIVIANA GR", "faltante": 56}, {"Producto": "C041201", "Descripcion": "LIP GLOSS ROSE VELVET VIVIANA GRONDON V1", "faltante": 56}, {"Producto": "C041202", "Descripcion": "LIP GLOSS ROSE VELVET VIVIANA GRONDON V2", "faltante": 56}, {"Producto": "C051501", "Descripcion": "COSMETIQUERA VIVIANA GRONDONA", "faltante": 56}, {"Producto": "C051601", "Descripcion": "ESTUCHE LIP GLOSS VIVIANA GRONDONA", "faltante": 56}, {"Producto": "C051602", "Descripcion": "CHARMS VIVIANA GRONDONA", "faltante": 56}, {"Producto": "ET0210SE", "Descripcion": "STICKER PR VIVIANA GRANDONA", "faltante": 56}], "aging": [{"bucket": "Vencido", "cantidad": 9113961}, {"bucket": "≤90d", "cantidad": 60527459}, {"bucket": "≤180d", "cantidad": 9023460}, {"bucket": "≤365d", "cantidad": 39548575}, {"bucket": ">365d", "cantidad": 9508023}], "pt_vence_6m_unidades": 69550919, "pt_total_unidades": 127721478};
+
 const TIPO_COL = ["#4a8fff","#36c97a","#f5a524","#9b7cf4","#f25757","#2dd4bf","#e879f9","#fb923c","#a3e635","#67e8f9","#fbbf24","#a78bfa","#34d399","#f87171"];
 const charts={};
 
@@ -665,6 +732,7 @@ function showPage(id,btn){
   if(id==='ciclo')renderCiclo();
   if(id==='inventario')renderInventario();
   if(id==='picking')renderPicking();
+  if(id==='indicadores')renderIndicadores();
 }
 
 // ── RESUMEN ─────────────────────────────────────────────
@@ -1355,6 +1423,102 @@ function renderPickTable(mes){
     <td class="r" style="color:${r.uds_x_min>=5.5?'#36c97a':'#f5a524'};">${fmt(r.uds_x_min,2)}</td>
     <td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:${Math.min(r.uds_x_min/12*100,100)}%;background:${r.uds_x_min>=5.5?'#36c97a':'#f5a524'};"></div></div></div></td>
   </tr>`).join('');
+}
+
+// ── INDICADORES+ ─────────────────────────────────────────
+function renderIndicadores(){
+  const otifMeses = IND.otif_mes || [];
+  const otifLast  = otifMeses[otifMeses.length-1];
+
+  // KPI 1 — OTIF
+  document.getElementById('kpi-otif-val').textContent = otifMeses.length ? fmt(IND.otif_pct_global,1)+'%' : '—';
+  document.getElementById('kpi-otif-val').style.color = otifMeses.length ? cc(IND.otif_pct_global) : 'inherit';
+  document.getElementById('kpi-otif-sub').textContent = otifLast
+    ? `${ml(otifLast.Mes)}: ${fmt(otifLast.otif_pct,1)}% (${otifLast.on_time}/${otifLast.pedidos})` : '—';
+
+  // KPI 2 — Fill Rate
+  const frTipo = IND.fillrate_tipo || [];
+  document.getElementById('kpi-fillrate-val').textContent = frTipo.length ? fmt(IND.fill_rate_global,1)+'%' : '—';
+  document.getElementById('kpi-fillrate-val').style.color = frTipo.length ? cc(IND.fill_rate_global) : 'inherit';
+  const topFill = [...frTipo].sort((a,b)=>b.pedidos-a.pedidos)[0];
+  document.getElementById('kpi-fillrate-sub').textContent = topFill
+    ? `${topFill.Documento}: ${fmt(topFill.fill_rate,1)}% (mayor volumen)` : '—';
+
+  // KPI 3 — Pedido Perfecto
+  document.getElementById('kpi-perfecto-val').textContent = frTipo.length ? fmt(IND.pedido_perfecto_pct_global,1)+'%' : '—';
+  document.getElementById('kpi-perfecto-val').style.color = frTipo.length ? cc(IND.pedido_perfecto_pct_global) : 'inherit';
+  document.getElementById('kpi-perfecto-sub').textContent = 'Todas las líneas del pedido 100% completas';
+
+  // KPI 4 — PT vence <=6 meses
+  const pct6m = IND.pt_total_unidades>0 ? (IND.pt_vence_6m_unidades/IND.pt_total_unidades*100) : 0;
+  document.getElementById('kpi-vence6m-val').textContent = IND.pt_total_unidades ? fmtK(IND.pt_vence_6m_unidades) : '—';
+  document.getElementById('kpi-vence6m-val').style.color = pct6m>=30?'var(--red)':pct6m>=15?'var(--amber)':'var(--green)';
+  document.getElementById('kpi-vence6m-sub').textContent = IND.pt_total_unidades
+    ? `${fmt(pct6m,1)}% del stock PT (${fmtK(IND.pt_total_unidades)} uds)` : '—';
+
+  // Gráfico OTIF por mes
+  mkChart('c-ind-otif',{
+    type:'line',
+    data:{
+      labels: otifMeses.map(m=>ml(m.Mes)),
+      datasets:[
+        {label:'OTIF',    data: otifMeses.map(m=>m.otif_pct), borderColor:'#4a8fff', backgroundColor:'rgba(74,143,255,0.1)', fill:true, tension:.35, pointRadius:5, pointBackgroundColor:'#4a8fff', borderWidth:2},
+        {label:'Meta 95%', data: otifMeses.map(()=>95), borderColor:'#f5a524', borderDash:[5,4], borderWidth:1.5, pointRadius:0, fill:false},
+      ]
+    },
+    options:{...gOpts('%'), plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>{
+      if(ctx.dataset.label!=='OTIF') return ' Meta: 95%';
+      const m = otifMeses[ctx.dataIndex];
+      return ` OTIF: ${fmt(m.otif_pct,1)}% (${m.on_time}/${m.pedidos} pedidos)`;
+    }}}}}
+  });
+
+  // Gráfico Fill Rate por tipo (top 10 por volumen de pedidos)
+  const fr = [...frTipo].sort((a,b)=>b.pedidos-a.pedidos).slice(0,10);
+  mkChart('c-ind-fillrate',{
+    type:'bar',
+    data:{ labels: fr.map(t=>t.Documento), datasets:[{data:fr.map(t=>t.fill_rate), backgroundColor:fr.map(t=>cc(t.fill_rate)), borderRadius:4}] },
+    options:{...gOpts('%'), plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>{
+      const t = fr[ctx.dataIndex];
+      return ` ${t.Documento}: ${fmt(t.fill_rate,1)}%  (${t.preparada.toLocaleString('es-CO')}/${t.pedida.toLocaleString('es-CO')} uds · ${t.pedidos} pedidos)`;
+    }}}}}
+  });
+
+  // Gráfico Pedido Perfecto por tipo (mismo orden que Fill Rate)
+  mkChart('c-ind-perfecto',{
+    type:'bar',
+    data:{ labels: fr.map(t=>t.Documento), datasets:[{data:fr.map(t=>t.pedido_perfecto_pct), backgroundColor:fr.map(t=>cc(t.pedido_perfecto_pct)), borderRadius:4}] },
+    options:{...gOpts('%'), plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>{
+      const t = fr[ctx.dataIndex];
+      return ` ${t.Documento}: ${fmt(t.pedido_perfecto_pct,1)}%  (${t.perfectos}/${t.pedidos} pedidos perfectos)`;
+    }}}}}
+  });
+
+  // Gráfico Aging PT
+  const aging = IND.aging || [];
+  const agingColors = {'Vencido':'#f25757','≤90d':'#f5a524','≤180d':'#fbbf24','≤365d':'#4a8fff','>365d':'#36c97a'};
+  mkChart('c-ind-aging',{
+    type:'bar',
+    data:{
+      labels: aging.map(b=>b.bucket),
+      datasets:[{data: aging.map(b=>b.cantidad), backgroundColor: aging.map(b=>agingColors[b.bucket]||'#8b92a8'), borderRadius:4}]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${fmtK(ctx.parsed.y)} uds`}}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11}}},
+        y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11},callback:fmtK}}
+      }
+    }
+  });
+
+  // Tabla top faltantes
+  document.getElementById('ind-faltantes-table').innerHTML = (IND.faltante_prod||[]).map(p=>`<tr>
+    <td>${p.Producto}</td>
+    <td>${p.Descripcion}</td>
+    <td class="r" style="color:var(--red);font-weight:600;">${p.faltante.toLocaleString('es-CO')}</td>
+  </tr>`).join('') || '<tr><td colspan="3" style="color:var(--text3);text-align:center;padding:1rem;">Sin faltantes registrados</td></tr>';
 }
 
 // ── INIT: poblar selects de mes desde los datos reales ──────
