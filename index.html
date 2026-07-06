@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Operaciones · Supply Chain</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{--bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--bg4:#242c3e;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);--text:#e8eaf0;--text2:#8b92a8;--text3:#4a5168;--blue:#4a8fff;--blue-d:rgba(74,143,255,0.13);--green:#36c97a;--green-d:rgba(54,201,122,0.13);--amber:#f5a524;--amber-d:rgba(245,165,36,0.13);--red:#f25757;--red-d:rgba(242,87,87,0.13);--purple:#9b7cf4;--teal:#2dd4bf;--r:10px;--rs:6px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;min-height:100vh;}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 28px;display:flex;align-items:center;gap:0;position:sticky;top:0;z-index:100;}
+.brand{font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--text);margin-right:28px;white-space:nowrap;padding:16px 0;}.brand span{color:var(--blue);}
+.tabs{display:flex;gap:2px;}
+.tab{padding:16px 18px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;background:none;border-top:none;border-left:none;border-right:none;white-space:nowrap;}
+.tab:hover{color:var(--text);}.tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+.mes-sel{background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:var(--rs);padding:6px 10px;font-size:12px;outline:none;cursor:pointer;}
+.badge-live{font-size:11px;background:var(--green-d);color:var(--green);border:1px solid rgba(54,201,122,.2);padding:3px 10px;border-radius:99px;display:flex;align-items:center;gap:5px;}
+.dot-live{width:6px;height:6px;border-radius:50%;background:var(--green);}
+.page{display:none;padding:28px;max-width:1400px;margin:0 auto;}.page.active{display:block;}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;position:relative;overflow:hidden;}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r) var(--r) 0 0;}
+.kpi.c-blue::after{background:var(--blue);}.kpi.c-green::after{background:var(--green);}.kpi.c-amber::after{background:var(--amber);}.kpi.c-purple::after{background:var(--purple);}.kpi.c-teal::after{background:var(--teal);}.kpi.c-red::after{background:var(--red);}
+.kpi-lbl{font-size:11px;color:var(--text2);margin-bottom:10px;font-weight:500;letter-spacing:.03em;}
+.kpi-val{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums;}
+.kpi-sub{font-size:12px;color:var(--text3);margin-top:6px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:18px;}
+.row-full{margin-bottom:18px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;}
+.card-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;}
+.card-sub{font-size:12px;color:var(--text2);margin-bottom:14px;}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
+.leg-sq{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+/* insight box */
+.insight{border-radius:var(--r);padding:14px 18px;margin-bottom:18px;border-left:3px solid;}
+.insight-green{background:var(--green-d);border-color:var(--green);}
+.insight-amber{background:var(--amber-d);border-color:var(--amber);}
+.insight-red{background:var(--red-d);border-color:var(--red);}
+.insight-title{font-size:12px;font-weight:600;margin-bottom:4px;}
+.insight-green .insight-title{color:var(--green);}
+.insight-amber .insight-title{color:var(--amber);}
+.insight-red .insight-title{color:var(--red);}
+.insight-body{font-size:12px;color:var(--text2);line-height:1.6;}
+/* table */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{font-size:11px;font-weight:500;color:var(--text3);text-align:left;padding:0 10px 10px;letter-spacing:.04em;text-transform:uppercase;border-bottom:1px solid var(--border);}
+thead th.r{text-align:right;}
+tbody td{padding:9px 10px;color:var(--text);border-bottom:1px solid var(--border);}
+tbody td.r{text-align:right;font-variant-numeric:tabular-nums;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:rgba(255,255,255,.02);}
+/* badges */
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:3px 8px;border-radius:4px;}
+.b-green{background:var(--green-d);color:var(--green);}.b-amber{background:var(--amber-d);color:var(--amber);}.b-red{background:var(--red-d);color:var(--red);}.b-blue{background:var(--blue-d);color:var(--blue);}.b-neu{background:var(--bg4);color:var(--text2);}
+/* progress */
+.pbar-wrap{display:flex;align-items:center;gap:8px;}
+.pbar{flex:1;height:5px;background:var(--bg4);border-radius:99px;overflow:hidden;min-width:60px;}
+.pbar-fill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.pct{font-size:12px;min-width:42px;text-align:right;font-variant-numeric:tabular-nums;}
+/* filter */
+.filter-row{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
+.filter-row label{font-size:12px;color:var(--text2);}
+.filter-row select{background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:var(--rs);padding:6px 10px;font-size:12px;outline:none;cursor:pointer;}
+/* mini stats */
+.mini-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+.mini-stat{background:var(--bg3);border-radius:var(--rs);padding:12px 14px;}
+.mini-stat-lbl{font-size:11px;color:var(--text3);margin-bottom:4px;}
+.mini-stat-val{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;}
+/* op bars */
+.op-bar-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);}
+.op-bar-row:last-child{border-bottom:none;}
+.op-name{font-size:12px;color:var(--text);min-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.op-bar-wrap{flex:1;display:flex;align-items:center;gap:8px;}
+.op-bar{flex:1;height:8px;background:var(--bg4);border-radius:99px;overflow:hidden;}
+.op-bar-fill{height:100%;border-radius:99px;}
+.op-val{font-size:12px;min-width:52px;text-align:right;font-variant-numeric:tabular-nums;}
+/* trend arrows */
+.arr-up{color:var(--red);} .arr-down{color:var(--green);} .arr-neu{color:var(--text3);}
+/* conf */
+.confbar-wrap{display:flex;align-items:center;gap:8px;}
+/* SLICER GLOBAL */
+.slicer-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 28px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:49px;z-index:99;}
+.slicer-label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;margin-right:4px;}
+.slicer-clear{font-size:11px;color:var(--text3);cursor:pointer;padding:3px 10px;border-radius:99px;border:1px solid rgba(242,87,87,0.3);background:var(--red-d);color:var(--red);transition:all .15s;}
+.slicer-clear:hover{opacity:0.8;}
+.filter-pill{display:inline-flex;align-items:center;gap:6px;background:var(--blue-d);border:1px solid rgba(74,143,255,0.3);border-radius:99px;padding:3px 12px;font-size:12px;color:var(--blue);}
+.filter-pill strong{font-weight:600;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">OPS<span>·</span>MONITOR</div>
+  <div class="tabs">
+    <button class="tab active" onclick="showPage('resumen',this)">Resumen</button>
+    <button class="tab" onclick="showPage('ciclo',this)">Ciclo de Pedido</button>
+    <button class="tab" onclick="showPage('inventario',this)">Confiabilidad Inv.</button>
+    <button class="tab" onclick="showPage('picking',this)">Picking</button>
+  </div>
+  <div class="topbar-right">
+    <div id="global-filter-indicator" style="display:none;" class="filter-pill">
+      <span id="global-filter-label"></span>
+      <span onclick="clearGlobalFilter()" style="cursor:pointer;font-size:14px;line-height:1;" title="Quitar filtro">✕</span>
+    </div>
+    <div class="badge-live"><div class="dot-live"></div><span id="badge-periodo">Datos reales · Abr–Jul 2026</span></div>
+  </div>
+</div>
+
+<!-- RESUMEN -->
+<div class="page active" id="page-resumen">
+  <div class="kpi-grid">
+    <div class="kpi c-green">
+      <div class="kpi-lbl">Ciclo promedio Jun 2026</div>
+      <div class="kpi-val" style="color:var(--green);">1.72 d</div>
+      <div class="kpi-sub">↓ vs 4.0d de abril · mejora del 57%</div>
+    </div>
+    <div class="kpi c-blue">
+      <div class="kpi-lbl">Confiabilidad inventario</div>
+      <div class="kpi-val" style="color:var(--amber);">97.2%</div>
+      <div class="kpi-sub">May 98.5% · Jun 95.1%</div>
+    </div>
+    <div class="kpi c-amber">
+      <div class="kpi-lbl">Picking uds/min · Jun</div>
+      <div class="kpi-val" style="color:var(--green);">6.09</div>
+      <div class="kpi-sub">↑ vs 4.7 de abril · mejora del 30%</div>
+    </div>
+    <div class="kpi c-purple">
+      <div class="kpi-lbl">Pedidos procesados</div>
+      <div class="kpi-val">7,603</div>
+      <div class="kpi-sub">Abr 1,921 · May 3,608 · Jun 2,074</div>
+    </div>
+  </div>
+
+  <div class="insight insight-green">
+    <div class="insight-title">✓ La operación SÍ está mejorando su ciclo de pedido</div>
+    <div class="insight-body">El ciclo ponderado real pasó de <strong style="color:var(--text);">4.0 días en abril</strong> → <strong style="color:var(--text);">2.1 días en mayo</strong> → <strong style="color:var(--text);">1.7 días en junio</strong>. Una reducción del 57% en tres meses. La mejora es consistente y está liderada por CPW (el tipo de mayor volumen) que bajó de 4.2 → 1.7 → 1.6 días. CPF también mejoró de 5.5 → 2.6 → 1.5 días. El picking acompaña: de 4.7 → 5.6 → 6.1 u/min.</div>
+  </div>
+
+  <div class="insight insight-amber">
+    <div class="insight-title">⚠ Tipos con ciclo aún elevado o en deterioro</div>
+    <div class="insight-body">CPV se mantiene alto (7.0 → 6.4 → 5.9 d) y aunque baja, sigue siendo el tipo más lento con ciclo real. CPG empeoró en mayo (2.9 → 7.3 d) antes de recuperar en junio (3.3 d). CRT pasó de 1.1 → 1.8 → 9.0 d en junio (solo 2 pedidos, puede ser dato atípico). CPL en junio: 9.0 d con muy poco volumen.</div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="card-title">Ciclo promedio ponderado por mes</div>
+      <div class="card-sub">Cálculo real pedido a pedido · igual que tabla dinámica Excel</div>
+      <div class="legend">
+        <span class="leg-item"><span class="leg-sq" style="background:#4a8fff;"></span>Promedio</span>
+        <span class="leg-item"><span style="width:14px;height:0;border-top:2px dashed #36c97a;display:inline-block;"></span>Mediana</span>
+      </div>
+      <div style="position:relative;height:210px;"><canvas id="c-res-ciclo" role="img" aria-label="Ciclo promedio ponderado por mes"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Productividad picking por mes</div>
+      <div class="card-sub">Unidades pickeadas por minuto · línea punteada = meta 5.5</div>
+      <div style="position:relative;height:210px;"><canvas id="c-res-pick" role="img" aria-label="Picking por mes"></canvas></div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+        <div class="card-title" id="donut-title">Participación por tipo de pedido</div>
+        <div style="display:flex;gap:2px;background:var(--bg3);border-radius:6px;padding:3px;">
+          <button id="btn-ped" onclick="switchDonut('ped')" style="font-size:11px;padding:4px 10px;border-radius:4px;border:none;cursor:pointer;background:var(--blue);color:#fff;font-weight:500;transition:all .15s;">Pedidos</button>
+          <button id="btn-uds" onclick="switchDonut('uds')" style="font-size:11px;padding:4px 10px;border-radius:4px;border:none;cursor:pointer;background:transparent;color:var(--text2);font-weight:500;transition:all .15s;">Unidades</button>
+        </div>
+      </div>
+      <div class="card-sub" id="donut-sub">% sobre 7,603 pedidos totales · Abr–Jun 2026</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center;">
+        <div style="position:relative;height:220px;"><canvas id="c-res-donut" role="img" aria-label="Participación por tipo"></canvas></div>
+        <div id="res-donut-legend" style="display:flex;flex-direction:column;gap:5px;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+        <div class="card-title" id="stack-title">Pedidos por tipo y mes</div>
+        <div style="display:flex;gap:2px;background:var(--bg3);border-radius:6px;padding:3px;">
+          <button id="btn-stack-ped" onclick="switchStack('ped')" style="font-size:11px;padding:4px 10px;border-radius:4px;border:none;cursor:pointer;background:var(--blue);color:#fff;font-weight:500;transition:all .15s;">Pedidos</button>
+          <button id="btn-stack-uds" onclick="switchStack('uds')" style="font-size:11px;padding:4px 10px;border-radius:4px;border:none;cursor:pointer;background:transparent;color:var(--text2);font-weight:500;transition:all .15s;">Unidades</button>
+        </div>
+      </div>
+      <div class="card-sub" id="stack-sub">Volumen mensual de los 8 tipos principales</div>
+      <div class="legend" id="res-stack-legend"></div>
+      <div id="stack-detail-panel" style="display:none;background:var(--bg3);border-radius:var(--rs);padding:8px 12px;margin-bottom:10px;border-left:2px solid var(--blue);"></div>
+      <div style="position:relative;height:190px;"><canvas id="c-res-stack" role="img" aria-label="Volumen por tipo y mes apilado"></canvas></div>
+    </div>
+  </div>
+
+  <div class="row-full">
+    <div class="card">
+      <div class="card-title">Ciclo por tipo de pedido — evolución mensual (días)</div>
+      <div class="card-sub">Solo tipos con volumen significativo · promedio ponderado real</div>
+      <table>
+        <thead><tr><th>Tipo</th><th class="r">Pedidos</th><th class="r">Abr</th><th class="r">May</th><th class="r">Jun</th><th>Tendencia</th><th>Ciclo global</th></tr></thead>
+        <tbody id="res-ciclo-tabla"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- CICLO -->
+<div class="page" id="page-ciclo">
+  <div class="filter-row">
+    <label>Mes:</label>
+    <select id="c-mes-sel" onchange="renderCiclo()">
+      <option value="todos">Todos</option>
+      <option value="2026-04">Abril</option>
+      <option value="2026-05">Mayo</option>
+      <option value="2026-06">Junio</option>
+    </select>
+    <label>Tipo:</label>
+    <select id="c-tipo-sel" onchange="renderCiclo()">
+      <option value="todos">Todos</option>
+    </select>
+  </div>
+
+  <div class="mini-stats" id="ciclo-mini"></div>
+
+  <div class="row2">
+    <div class="card">
+      <div class="card-title">Ciclo promedio por tipo (días)</div>
+      <div class="card-sub">Período seleccionado · promedio ponderado</div>
+      <div style="position:relative;height:270px;"><canvas id="c-ciclo-tipo" role="img" aria-label="Ciclo por tipo"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Evolución mensual por tipo</div>
+      <div class="card-sub">Tendencia de los tipos de mayor volumen</div>
+      <div class="legend" id="ciclo-evo-legend"></div>
+      <div style="position:relative;height:235px;"><canvas id="c-ciclo-evo" role="img" aria-label="Evolución ciclo por mes"></canvas></div>
+    </div>
+  </div>
+
+  <div class="row-full">
+    <div class="card">
+      <div class="card-title">Unidades despachadas y ciclo por tipo</div>
+      <div class="card-sub">Período seleccionado · haz clic en cualquier columna para ordenar</div>
+      <table id="ciclo-uds-table-wrap">
+        <thead>
+          <tr>
+            <th onclick="sortCicloTable('tipo')" style="cursor:pointer;user-select:none;" title="Ordenar por tipo">Tipo <span id="sort-ico-tipo"></span></th>
+            <th class="r" onclick="sortCicloTable('pedidos')" style="cursor:pointer;user-select:none;" title="Ordenar por pedidos">Pedidos <span id="sort-ico-pedidos"></span></th>
+            <th class="r" onclick="sortCicloTable('uds')" style="cursor:pointer;user-select:none;" title="Ordenar por unidades">Unidades <span id="sort-ico-uds"></span></th>
+            <th onclick="sortCicloTable('pct')" style="cursor:pointer;user-select:none;" title="Ordenar por participación">Participación uds <span id="sort-ico-pct"></span></th>
+            <th class="r" onclick="sortCicloTable('ciclo')" style="cursor:pointer;user-select:none;" title="Ordenar por ciclo">Ciclo prom. (días) <span id="sort-ico-ciclo"></span></th>
+            <th>Semáforo</th>
+          </tr>
+        </thead>
+        <tbody id="ciclo-uds-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- INVENTARIO -->
+<div class="page" id="page-inventario">
+  <div id="inv-kpi-grid" class="kpi-grid" style="grid-template-columns:repeat(3,1fr);"></div>
+  <div class="row2">
+    <div class="card">
+      <div class="card-title">Evolución confiabilidad por mes</div>
+      <div class="card-sub">Confiabilidad promedio ponderada por contenedores · PT vs MP vs Global</div>
+      <div style="position:relative;height:280px;"><canvas id="c-inv-evo" role="img" aria-label="Evolución confiabilidad por mes"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Cíclicos realizados por mes</div>
+      <div class="card-sub">Número de conteos por tipo · pasa el mouse para ver contenedores revisados</div>
+      <div style="position:relative;height:280px;"><canvas id="c-inv-conteos" role="img" aria-label="Cíclicos realizados por mes"></canvas></div>
+    </div>
+  </div>
+  <div class="row-full">
+    <div class="card">
+      <div class="card-title">Detalle completo por inventario</div>
+      <table>
+        <thead><tr><th>#</th><th>Nombre</th><th>Mes</th><th class="r">Contenedores</th><th class="r">Iguales</th><th class="r">Faltantes</th><th class="r">Sobrantes</th><th>Confiabilidad</th><th>Estado</th></tr></thead>
+        <tbody id="inv-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- COBERTURA -->
+  <div class="row-full">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div>
+          <div class="card-title">Cobertura de conteos cíclicos vs inventario PT</div>
+          <div class="card-sub">Contenedores revisados / total Almacenamiento PT · 109 referencias · 1,487,834 unidades</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:var(--text3);">Total PT en WMS</div>
+          <div style="font-size:22px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;">11,588</div>
+          <div style="font-size:11px;color:var(--text3);">contenedores únicos</div>
+        </div>
+      </div>
+      <div id="inv-cobertura-body"></div>
+
+      <!-- Top referencias en PT -->
+      <div style="font-size:12px;font-weight:600;color:var(--text2);letter-spacing:.05em;text-transform:uppercase;margin:18px 0 10px;padding-bottom:8px;border-bottom:1px solid var(--border);">Top referencias por contenedores en PT</div>
+      <table>
+        <thead><tr><th>Código</th><th>Nombre</th><th class="r">Contenedores</th><th>% del PT</th><th class="r">Unidades</th></tr></thead>
+        <tbody>
+          <tr><td>K010101</td><td>Shampo de Cebolla Kaba</td><td class="r">3,811</td><td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:100%;background:var(--purple);"></div></div><span class="pct">32.9%</span></div></td><td class="r">298,470</td></tr>
+          <tr><td>K010302</td><td>Bio Mascarilla Capilar Kaba</td><td class="r">1,435</td><td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:37.6%;background:var(--purple);"></div></div><span class="pct">12.4%</span></div></td><td class="r">116,534</td></tr>
+          <tr><td>K021101</td><td>Pócima para Pestañas Kaba</td><td class="r">994</td><td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:26.1%;background:var(--purple);"></div></div><span class="pct">8.6%</span></div></td><td class="r">218,718</td></tr>
+          <tr><td>D030601</td><td>Freshing Pop After Sun Dluchi</td><td class="r">851</td><td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:22.3%;background:var(--purple);"></div></div><span class="pct">7.3%</span></div></td><td class="r">20,424</td></tr>
+          <tr><td>K010201</td><td>Acondicionador de Ceramidas Kaba</td><td class="r">656</td><td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:17.2%;background:var(--purple);"></div></div><span class="pct">5.7%</span></div></td><td class="r">57,680</td></tr>
+          <tr><td colspan="2" style="color:var(--text3);font-size:12px;">+ 104 referencias más</td><td class="r" style="color:var(--text3);">3,841</td><td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:100.7%;background:var(--bg4);"></div></div><span class="pct">33.1%</span></div></td><td class="r" style="color:var(--text3);">776,008</td></tr>
+        </tbody>
+      </table>
+
+      <div style="margin-top:14px;padding:12px 14px;background:var(--amber-d);border-left:3px solid var(--amber);border-radius:var(--rs);">
+        <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:4px;">⚠ Ritmo actual de cobertura PT</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6;">Con <strong style="color:var(--text);">944 contenedores PT/mes</strong> al ritmo actual se necesitarían <strong style="color:var(--text);">12 meses</strong> para cubrir los 11,588 contenedores PT una vez. Para rotación anual completa se requieren <strong style="color:var(--red);">966 contenedores/mes</strong> — prácticamente el doble de lo que se hizo en junio (505). Solo el <strong style="color:var(--text);">Shampo de Cebolla</strong> concentra 3,811 contenedores (33% del PT): priorizarlo en los cíclicos movería significativamente la cobertura.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PICKING -->
+<div class="page" id="page-picking">
+  <div class="filter-row">
+    <label>Mes:</label>
+    <select id="p-mes-sel" onchange="renderPicking()">
+      <option value="todos">Todos</option>
+      <option value="2026-04">Abril</option>
+      <option value="2026-05">Mayo</option>
+      <option value="2026-06">Junio</option>
+    </select>
+  </div>
+  <div class="mini-stats" id="pick-mini"></div>
+  <div class="row2">
+    <div class="card">
+      <div class="card-title">Productividad por operario (uds/min)</div>
+      <div class="card-sub" id="pick-op-sub">Período seleccionado · excluye atípicos estadísticos</div>
+      <div id="pick-op-bars"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Evolución equipo uds/min por mes</div>
+      <div class="card-sub">Promedio ponderado del equipo vs meta 5.5</div>
+      <div class="legend">
+        <span class="leg-item"><span class="leg-sq" style="background:#4a8fff;"></span>Equipo</span>
+        <span class="leg-item"><span style="width:14px;height:0;border-top:2px dashed #f5a524;display:inline-block;"></span>Meta 4.5</span>
+      </div>
+      <div style="position:relative;height:200px;"><canvas id="c-pick-trend" role="img" aria-label="Evolución picking por mes"></canvas></div>
+    </div>
+  </div>
+
+  <div class="row-full">
+    <div class="card">
+      <div class="card-title">Evolución mensual por operario (uds/min)</div>
+      <div class="card-sub">Promedio ponderado por mes · verde ≥ 5.5 · amarillo &lt; 5.5 · gris = sin datos ese mes</div>
+      <div id="pick-op-evo-table"></div>
+    </div>
+  </div>
+  <div class="row-full">
+    <div class="card">
+      <div class="card-title">Detalle por operario y mes</div>
+      <table>
+        <thead><tr><th>Operario</th><th>Mes</th><th class="r">Jornadas</th><th class="r">Unidades</th><th class="r">Minutos</th><th class="r">Uds/hora</th><th class="r">Uds/min</th><th>Ritmo</th></tr></thead>
+        <tbody id="pick-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── GLOBAL FILTER STATE ──────────────────────────────────────
+const GF = { tipo: null, mes: null };
+
+function setGlobalTipo(t){
+  GF.tipo = GF.tipo === t ? null : t;
+  updateFilterIndicator();
+  refreshAllPages();
+}
+
+function setGlobalMes(m){
+  GF.mes = GF.mes === m ? null : m;
+  updateFilterIndicator();
+  refreshAllPages();
+}
+
+function clearGlobalFilter(){
+  GF.tipo = null; GF.mes = null;
+  if(typeof cicloSelectedTipo !== 'undefined') cicloSelectedTipo = null;
+  updateFilterIndicator();
+  refreshAllPages();
+}
+
+function updateFilterIndicator(){
+  const ind = document.getElementById('global-filter-indicator');
+  const lbl = document.getElementById('global-filter-label');
+  const parts = [];
+  if(GF.tipo) parts.push(GF.tipo);
+  if(GF.mes) parts.push({'2026-04':'Abr','2026-05':'May','2026-06':'Jun'}[GF.mes]||GF.mes);
+  if(parts.length){ ind.style.display='inline-flex'; lbl.innerHTML=`Filtro: <strong>${parts.join(' · ')}</strong>`; }
+  else { ind.style.display='none'; }
+}
+
+function activeMeses(){ return GF.mes ? [GF.mes] : ['2026-04','2026-05','2026-06']; }
+function activeTipos(){ return GF.tipo ? [GF.tipo] : null; }
+
+function filterRows(rows, mesCol='Mes', tipoCol='Documento'){
+  let r = rows;
+  if(GF.mes) r = r.filter(x=>x[mesCol]===GF.mes);
+  if(GF.tipo) r = r.filter(x=>x[tipoCol]===GF.tipo);
+  return r;
+}
+
+function refreshAllPages(){
+  const active = document.querySelector('.tab.active');
+  if(!active) return;
+  const txt = active.textContent.trim();
+  try {
+    if(txt==='Resumen') renderResumen();
+    else if(txt==='Ciclo de Pedido'){ if(typeof cicloSelectedTipo!=='undefined') cicloSelectedTipo=null; renderCiclo(); }
+    else if(txt==='Confiabilidad Inv.') renderInventario();
+    else if(txt==='Picking') renderPicking();
+  } catch(e){ console.warn('refreshAllPages error:', e.message); }
+}
+
+// GF.tipo solo afecta ciclo y resumen — NO al stack (que tiene su propio highlight visual)
+function setGlobalTipo(t){
+  GF.tipo = GF.tipo===t ? null : t;
+  updateFilterIndicator();
+  // Solo refrescar si no es resumen (el stack se maneja solo)
+  const active = document.querySelector('.tab.active');
+  if(!active) return;
+  const txt = active.textContent.trim();
+  try {
+    if(txt==='Ciclo de Pedido'){ if(typeof cicloSelectedTipo!=='undefined') cicloSelectedTipo=GF.tipo; renderCiclo(); }
+    else if(txt==='Picking') renderPicking();
+    // En resumen NO re-renderizar para no destruir el stack highlight
+  } catch(e){ console.warn('setGlobalTipo error:', e.message); }
+}
+
+// legacy aliases so old calls still work
+function toggleSlicer(){}
+function clearSlicers(){ clearGlobalFilter(); }
+function updateSlicerLabel(){ updateFilterIndicator(); }
+
+const PED      = {"ped_global": [{"Documento": "CPW", "pedidos": 6016}, {"Documento": "CPZ", "pedidos": 724}, {"Documento": "CPF", "pedidos": 668}, {"Documento": "CPV", "pedidos": 565}, {"Documento": "CRB", "pedidos": 441}, {"Documento": "CPS", "pedidos": 411}, {"Documento": "CRI", "pedidos": 257}, {"Documento": "CPE", "pedidos": 158}, {"Documento": "CRT", "pedidos": 148}, {"Documento": "CTT", "pedidos": 122}, {"Documento": "CPG", "pedidos": 115}, {"Documento": "PED_REABA", "pedidos": 37}, {"Documento": "CRK", "pedidos": 32}, {"Documento": "CPL", "pedidos": 21}, {"Documento": "CPY", "pedidos": 7}, {"Documento": "CPX", "pedidos": 5}], "ped_mes_tipo": [{"Documento": "CPW", "2026-05": 2014, "2026-04": 1119, "2026-06": 2394, "2026-07": 489}, {"Documento": "CPZ", "2026-05": 589, "2026-06": 124, "2026-04": 5, "2026-07": 6}, {"Documento": "CPF", "2026-06": 190, "2026-04": 193, "2026-05": 245, "2026-07": 40}, {"Documento": "CPV", "2026-05": 239, "2026-04": 203, "2026-06": 111, "2026-07": 12}, {"Documento": "CRB", "2026-06": 136, "2026-05": 153, "2026-04": 129, "2026-07": 23}, {"Documento": "CPS", "2026-06": 56, "2026-05": 109, "2026-04": 239, "2026-07": 7}, {"Documento": "CRI", "2026-04": 92, "2026-06": 123, "2026-05": 42}, {"Documento": "CPE", "2026-04": 64, "2026-05": 53, "2026-06": 39, "2026-07": 2}, {"Documento": "CRT", "2026-06": 39, "2026-04": 38, "2026-05": 56, "2026-07": 15}, {"Documento": "CTT", "2026-06": 33, "2026-04": 33, "2026-05": 45, "2026-07": 11}, {"Documento": "CPG", "2026-04": 39, "2026-05": 38, "2026-06": 32, "2026-07": 6}, {"Documento": "PED_REABA", "2026-06": 37}, {"Documento": "CRK", "2026-05": 15, "2026-06": 10, "2026-04": 7}, {"Documento": "CPL", "2026-05": 8, "2026-06": 9, "2026-04": 3, "2026-07": 1}, {"Documento": "CPY", "2026-05": 2, "2026-06": 3, "2026-07": 2}, {"Documento": "CPX", "2026-06": 5}]};
+
+// Unidades globales y por mes por tipo (del CSV de ciclo)
+const UDS_TIPO = {};
+
+let donutMode = 'ped';
+let stackMode = 'ped';
+const donutColors = ['#4a8fff','#36c97a','#f5a524','#9b7cf4','#f25757','#2dd4bf','#fb923c','#4a5168'];
+
+function renderDonut(mode){
+  donutMode = mode;
+  const btnStyle = (on)=>on?'font-size:11px;padding:4px 10px;border-radius:4px;border:none;cursor:pointer;background:var(--blue);color:#fff;font-weight:500;':'font-size:11px;padding:4px 10px;border-radius:4px;border:none;cursor:pointer;background:transparent;color:var(--text2);font-weight:500;';
+  document.getElementById('btn-ped').style.cssText = btnStyle(mode==='ped');
+  document.getElementById('btn-uds').style.cssText = btnStyle(mode==='uds');
+
+  let items, totalAll, labelFn;
+  if(mode==='ped'){
+    const pedFilt = filterRows(D.ciclo_mes_tipo);
+    const byT={};pedFilt.forEach(r=>{if(!byT[r.Documento])byT[r.Documento]=0;byT[r.Documento]+=r.pedidos;});
+    const sorted=Object.entries(byT).sort((a,b)=>b[1]-a[1]);
+    const top7=sorted.slice(0,7),otros=sorted.slice(7).reduce((a,b)=>a+b[1],0);
+    items=[...top7.map(([k,v])=>({k,v})),...(otros?[{k:'Otros',v:otros}]:[])];
+    totalAll=sorted.reduce((a,b)=>a+b[1],0)||1;
+    labelFn=v=>v.toLocaleString('es-CO')+' ped.';
+    document.getElementById('donut-title').textContent='Participación · Pedidos';
+    document.getElementById('donut-sub').textContent=`${totalAll.toLocaleString('es-CO')} pedidos en filtro activo`;
+  } else {
+    const udsFilt=filterRows(D.uds_mes_tipo,'Mes','Documento');
+    const byT={};udsFilt.forEach(r=>{if(!byT[r.Documento])byT[r.Documento]=0;byT[r.Documento]+=r.Unidades;});
+    const sorted=Object.entries(byT).sort((a,b)=>b[1]-a[1]);
+    const top7=sorted.slice(0,7),otros=sorted.slice(7).reduce((a,b)=>a+b[1],0);
+    items=[...top7.map(([k,v])=>({k,v:+(v/1000).toFixed(1)})),...(otros?[{k:'Otros',v:+(otros/1000).toFixed(1)}]:[])];
+    totalAll=+(sorted.reduce((a,b)=>a+b[1],0)/1000).toFixed(1)||1;
+    labelFn=v=>v.toLocaleString('es-CO')+' K uds';
+    document.getElementById('donut-title').textContent='Participación · Unidades (miles)';
+    document.getElementById('donut-sub').textContent=`${totalAll.toLocaleString('es-CO')} K uds en filtro activo`;
+  }
+  if(!items.length){document.getElementById('res-donut-legend').innerHTML='<div style="color:var(--text3);font-size:12px;padding:8px;">Sin datos</div>';return;}
+  mkChart('c-res-donut',{type:'doughnut',data:{labels:items.map(x=>x.k),datasets:[{data:items.map(x=>x.v),backgroundColor:donutColors,borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${((ctx.parsed/totalAll)*100).toFixed(1)}%`}}},
+  }});
+  document.getElementById('c-res-donut').style.cursor='default';
+  document.getElementById('res-donut-legend').innerHTML=items.map((it,i)=>{
+    const pct=(it.v/totalAll*100).toFixed(1);
+    return `<div style="display:flex;align-items:center;gap:7px;">
+      <span style="width:9px;height:9px;border-radius:2px;background:${donutColors[i]};flex-shrink:0;"></span>
+      <span style="font-size:12px;color:var(--text2);flex:1;">${it.k}</span>
+      <span style="font-size:12px;font-weight:500;color:var(--text);">${pct}%</span>
+      <span style="font-size:11px;color:var(--text3);">${labelFn(it.v)}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderStack(mode){
+  stackMode = mode;
+  const btnStyle=(on)=>on?'font-size:11px;padding:4px 10px;border-radius:4px;border:none;cursor:pointer;background:var(--blue);color:#fff;font-weight:500;':'font-size:11px;padding:4px 10px;border-radius:4px;border:none;cursor:pointer;background:transparent;color:var(--text2);font-weight:500;';
+  document.getElementById('btn-stack-ped').style.cssText=btnStyle(mode==='ped');
+  document.getElementById('btn-stack-uds').style.cssText=btnStyle(mode==='uds');
+
+  const sc8=['#4a8fff','#36c97a','#f5a524','#9b7cf4','#f25757','#2dd4bf','#fb923c','#a3e635'];
+
+  // Siempre datos completos — sin filtrar
+  const allData = mode==='ped'
+    ? (()=>{
+        const m={};
+        D.ciclo_mes_tipo.forEach(r=>{ if(!m[r.Documento])m[r.Documento]={'2026-04':0,'2026-05':0,'2026-06':0}; m[r.Documento][r.Mes]+=r.pedidos; });
+        return Object.entries(m).sort((a,b)=>Object.values(b[1]).reduce((s,v)=>s+v,0)-Object.values(a[1]).reduce((s,v)=>s+v,0)).slice(0,8).map(([k,v])=>({t:k,...v}));
+      })()
+    : (()=>{
+        const m={};
+        D.uds_mes_tipo.forEach(r=>{ if(!m[r.Documento])m[r.Documento]={'2026-04':0,'2026-05':0,'2026-06':0}; m[r.Documento][r.Mes]+=r.Unidades; });
+        return Object.entries(m).sort((a,b)=>Object.values(b[1]).reduce((s,v)=>s+v,0)-Object.values(a[1]).reduce((s,v)=>s+v,0)).slice(0,8).map(([k,v])=>({t:k,'2026-04':+(v['2026-04']/1000).toFixed(1),'2026-05':+(v['2026-05']/1000).toFixed(1),'2026-06':+(v['2026-06']/1000).toFixed(1)}));
+      })();
+
+  const yFmt = mode==='ped'
+    ? v=>v>=1000?(v/1000).toFixed(0)+'K':v
+    : v=>v>=1000?(v/1000).toFixed(0)+'M':v+'K';
+
+  document.getElementById('stack-title').textContent = mode==='ped'?'Pedidos por tipo y mes':'Unidades (miles) por tipo y mes';
+  document.getElementById('stack-sub').textContent = 'Clic en la leyenda para resaltar un tipo';
+
+  // Estado de highlight persistente
+  if(window._stackHL_tipo===undefined) window._stackHL_tipo=null;
+
+  function h2r(hex,a){ const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; }
+
+  function drawChart(hl){
+    destroyChart('c-res-stack');
+    charts['c-res-stack'] = new Chart(document.getElementById('c-res-stack'),{
+      type:'bar',
+      data:{
+        labels:['Abr','May','Jun'],
+        datasets: allData.map((r,i)=>({
+          label:r.t,
+          data:['2026-04','2026-05','2026-06'].map(m=>r[m]||0),
+          backgroundColor: !hl||r.t===hl ? sc8[i] : h2r(sc8[i],0.1),
+          borderSkipped:false
+        }))
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false, animation:{duration:200},
+        plugins:{legend:{display:false}, tooltip:{callbacks:{title:ctx=>ctx[0].label,label:ctx=>`${ctx.dataset.label}: ${yFmt(ctx.parsed.y)}`}}},
+        scales:{
+          x:{stacked:true,grid:{display:false},ticks:{color:'#8b92a8',font:{size:11}}},
+          y:{stacked:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11},callback:yFmt}}
+        }
+      }
+    });
+  }
+
+  // Precalcular totales por tipo para mostrarlos en la leyenda
+  const totalPorTipo = {};
+  allData.forEach(r=>{
+    totalPorTipo[r.t] = ['2026-04','2026-05','2026-06'].reduce((s,m)=>s+(r[m]||0), 0);
+  });
+  const grandTotal = Object.values(totalPorTipo).reduce((a,b)=>a+b, 0);
+
+  function drawLegend(hl){
+    document.getElementById('res-stack-legend').innerHTML = allData.map((r,i)=>{
+      const total = totalPorTipo[r.t] || 0;
+      const pct = grandTotal ? (total/grandTotal*100).toFixed(1) : 0;
+      const isHL = hl===r.t;
+      return `<span onclick="window.stackClickHL('${r.t}')"
+        style="display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;padding:4px 9px;border-radius:5px;
+               opacity:${!hl||isHL?1:0.2};transition:all .15s;
+               background:${isHL?sc8[i]+'25':'transparent'};
+               outline:${isHL?'1.5px solid '+sc8[i]:'none'};
+               color:${isHL?'#fff':'var(--text2)'};">
+        <span style="width:8px;height:8px;border-radius:2px;background:${sc8[i]};flex-shrink:0;display:inline-block;"></span>
+        <span>${r.t}</span>
+        ${isHL ? `<span style="font-size:10px;background:${sc8[i]};color:#fff;padding:1px 6px;border-radius:3px;font-weight:600;font-variant-numeric:tabular-nums;">${yFmt(total)}</span><span style="font-size:10px;opacity:0.8;">${pct}%</span>` : ''}
+      </span>`;
+    }).join('');
+
+    // Panel de detalle al seleccionar un tipo
+    const panel = document.getElementById('stack-detail-panel');
+    if(panel){
+      if(hl){
+        const r = allData.find(x=>x.t===hl);
+        const i = allData.indexOf(r);
+        const vals = ['2026-04','2026-05','2026-06'].map(m=>r[m]||0);
+        const labels = ['Abr','May','Jun'];
+        panel.style.display='block';
+        panel.innerHTML = `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <span style="font-size:12px;font-weight:600;color:${sc8[i]};">${hl}</span>
+          <span style="font-size:11px;color:var(--text3);">|</span>
+          ${vals.map((v,j)=>`<span style="font-size:12px;color:var(--text2);">${labels[j]}: <strong style="color:var(--text);font-variant-numeric:tabular-nums;">${yFmt(v)}</strong></span>`).join('<span style="font-size:11px;color:var(--text3);">·</span>')}
+          <span style="font-size:11px;color:var(--text3);">|</span>
+          <span style="font-size:12px;color:var(--text2);">Total: <strong style="color:${sc8[i]};font-variant-numeric:tabular-nums;">${yFmt(totalPorTipo[hl])}</strong></span>
+          <span style="font-size:12px;color:var(--text2);">(${(totalPorTipo[hl]/grandTotal*100).toFixed(1)}% del período)</span>
+          <span onclick="window.stackClickHL('${hl}')" style="cursor:pointer;font-size:12px;color:var(--text3);margin-left:4px;padding:1px 6px;border-radius:3px;background:var(--bg3);">✕ quitar</span>
+        </div>`;
+      } else {
+        panel.style.display='none';
+      }
+    }
+  }
+
+  window.stackClickHL = function(tipo){
+    window._stackHL_tipo = window._stackHL_tipo===tipo ? null : tipo;
+    drawChart(window._stackHL_tipo);
+    drawLegend(window._stackHL_tipo);
+  };
+
+  drawChart(window._stackHL_tipo);
+  drawLegend(window._stackHL_tipo);
+}
+
+function switchDonut(mode){ renderDonut(mode); }
+function switchStack(mode){ renderStack(mode); }
+
+const D        = {"mes_pond": [{"Mes": "2026-04", "pedidos": 1860, "promedio": 4.91, "mediana": 4.0, "p75": 8.0}, {"Mes": "2026-05", "pedidos": 2752, "promedio": 2.07, "mediana": 1.0, "p75": 2.0}, {"Mes": "2026-06", "pedidos": 2457, "promedio": 1.53, "mediana": 1.0, "p75": 2.0}, {"Mes": "2026-07", "pedidos": 287, "promedio": 0.26, "mediana": 0.0, "p75": 1.0}], "ciclo_mes_tipo": [{"Mes": "2026-04", "Documento": "CPE", "pedidos": 50, "promedio": 0.16}, {"Mes": "2026-04", "Documento": "CPF", "pedidos": 183, "promedio": 5.51}, {"Mes": "2026-04", "Documento": "CPG", "pedidos": 35, "promedio": 2.89}, {"Mes": "2026-04", "Documento": "CPL", "pedidos": 2, "promedio": 3.5}, {"Mes": "2026-04", "Documento": "CPS", "pedidos": 94, "promedio": 2.18}, {"Mes": "2026-04", "Documento": "CPV", "pedidos": 175, "promedio": 6.97}, {"Mes": "2026-04", "Documento": "CPW", "pedidos": 1099, "promedio": 5.7}, {"Mes": "2026-04", "Documento": "CRB", "pedidos": 101, "promedio": 2.49}, {"Mes": "2026-04", "Documento": "CRI", "pedidos": 79, "promedio": 0.32}, {"Mes": "2026-04", "Documento": "CRK", "pedidos": 5, "promedio": 0.4}, {"Mes": "2026-04", "Documento": "CRT", "pedidos": 37, "promedio": 1.14}, {"Mes": "2026-05", "Documento": "CPE", "pedidos": 51, "promedio": 0.12}, {"Mes": "2026-05", "Documento": "CPF", "pedidos": 242, "promedio": 2.62}, {"Mes": "2026-05", "Documento": "CPG", "pedidos": 38, "promedio": 7.34}, {"Mes": "2026-05", "Documento": "CPL", "pedidos": 7, "promedio": 1.86}, {"Mes": "2026-05", "Documento": "CPS", "pedidos": 52, "promedio": 4.29}, {"Mes": "2026-05", "Documento": "CPV", "pedidos": 161, "promedio": 6.37}, {"Mes": "2026-05", "Documento": "CPW", "pedidos": 1962, "promedio": 1.68}, {"Mes": "2026-05", "Documento": "CPY", "pedidos": 2, "promedio": 5.5}, {"Mes": "2026-05", "Documento": "CPZ", "pedidos": 9, "promedio": 0.67}, {"Mes": "2026-05", "Documento": "CRB", "pedidos": 134, "promedio": 0.6}, {"Mes": "2026-05", "Documento": "CRI", "pedidos": 37, "promedio": 0.65}, {"Mes": "2026-05", "Documento": "CRK", "pedidos": 11, "promedio": 0.55}, {"Mes": "2026-05", "Documento": "CRT", "pedidos": 46, "promedio": 1.76}, {"Mes": "2026-06", "Documento": "CPE", "pedidos": 34, "promedio": 0.24}, {"Mes": "2026-06", "Documento": "CPF", "pedidos": 177, "promedio": 1.38}, {"Mes": "2026-06", "Documento": "CPG", "pedidos": 19, "promedio": 3.16}, {"Mes": "2026-06", "Documento": "CPL", "pedidos": 3, "promedio": 6.0}, {"Mes": "2026-06", "Documento": "CPS", "pedidos": 51, "promedio": 1.35}, {"Mes": "2026-06", "Documento": "CPV", "pedidos": 79, "promedio": 5.23}, {"Mes": "2026-06", "Documento": "CPW", "pedidos": 1878, "promedio": 1.4}, {"Mes": "2026-06", "Documento": "CPX", "pedidos": 2, "promedio": 7.0}, {"Mes": "2026-06", "Documento": "CPY", "pedidos": 1, "promedio": 6.0}, {"Mes": "2026-06", "Documento": "CPZ", "pedidos": 12, "promedio": 0.25}, {"Mes": "2026-06", "Documento": "CRB", "pedidos": 86, "promedio": 0.87}, {"Mes": "2026-06", "Documento": "CRI", "pedidos": 113, "promedio": 1.78}, {"Mes": "2026-06", "Documento": "CRT", "pedidos": 2, "promedio": 9.0}, {"Mes": "2026-07", "Documento": "CPE", "pedidos": 2, "promedio": 0.0}, {"Mes": "2026-07", "Documento": "CPF", "pedidos": 28, "promedio": 0.0}, {"Mes": "2026-07", "Documento": "CPG", "pedidos": 3, "promedio": 0.33}, {"Mes": "2026-07", "Documento": "CPV", "pedidos": 6, "promedio": 0.5}, {"Mes": "2026-07", "Documento": "CPW", "pedidos": 221, "promedio": 0.31}, {"Mes": "2026-07", "Documento": "CPY", "pedidos": 1, "promedio": 1.0}, {"Mes": "2026-07", "Documento": "CPZ", "pedidos": 6, "promedio": 0.0}, {"Mes": "2026-07", "Documento": "CRB", "pedidos": 20, "promedio": 0.1}], "uds_mes_tipo": [{"Mes": "2026-04", "Documento": "CPE", "Unidades": 864}, {"Mes": "2026-04", "Documento": "CPF", "Unidades": 3214}, {"Mes": "2026-04", "Documento": "CPG", "Unidades": 2247638}, {"Mes": "2026-04", "Documento": "CPL", "Unidades": 148732}, {"Mes": "2026-04", "Documento": "CPS", "Unidades": 101497}, {"Mes": "2026-04", "Documento": "CPV", "Unidades": 5698631}, {"Mes": "2026-04", "Documento": "CPW", "Unidades": 18116}, {"Mes": "2026-04", "Documento": "CPZ", "Unidades": 5}, {"Mes": "2026-04", "Documento": "CRB", "Unidades": 1105107}, {"Mes": "2026-04", "Documento": "CRI", "Unidades": 2349}, {"Mes": "2026-04", "Documento": "CRK", "Unidades": 20835}, {"Mes": "2026-04", "Documento": "CRT", "Unidades": 436457}, {"Mes": "2026-04", "Documento": "CTT", "Unidades": 39296}, {"Mes": "2026-05", "Documento": "CPE", "Unidades": 851}, {"Mes": "2026-05", "Documento": "CPF", "Unidades": 5877}, {"Mes": "2026-05", "Documento": "CPG", "Unidades": 1949124}, {"Mes": "2026-05", "Documento": "CPL", "Unidades": 303784}, {"Mes": "2026-05", "Documento": "CPS", "Unidades": 185275}, {"Mes": "2026-05", "Documento": "CPV", "Unidades": 4329699}, {"Mes": "2026-05", "Documento": "CPW", "Unidades": 30084}, {"Mes": "2026-05", "Documento": "CPY", "Unidades": 6521288}, {"Mes": "2026-05", "Documento": "CPZ", "Unidades": 757}, {"Mes": "2026-05", "Documento": "CRB", "Unidades": 6671959}, {"Mes": "2026-05", "Documento": "CRI", "Unidades": 1356}, {"Mes": "2026-05", "Documento": "CRK", "Unidades": 9613}, {"Mes": "2026-05", "Documento": "CRT", "Unidades": 331638}, {"Mes": "2026-05", "Documento": "CTT", "Unidades": 12928}, {"Mes": "2026-06", "Documento": "CPE", "Unidades": 448}, {"Mes": "2026-06", "Documento": "CPF", "Unidades": 3336}, {"Mes": "2026-06", "Documento": "CPG", "Unidades": 1119303}, {"Mes": "2026-06", "Documento": "CPL", "Unidades": 80783}, {"Mes": "2026-06", "Documento": "CPS", "Unidades": 3301}, {"Mes": "2026-06", "Documento": "CPV", "Unidades": 3348663}, {"Mes": "2026-06", "Documento": "CPW", "Unidades": 30653}, {"Mes": "2026-06", "Documento": "CPX", "Unidades": 37363}, {"Mes": "2026-06", "Documento": "CPY", "Unidades": 9027162}, {"Mes": "2026-06", "Documento": "CPZ", "Unidades": 156}, {"Mes": "2026-06", "Documento": "CRB", "Unidades": 2555740}, {"Mes": "2026-06", "Documento": "CRI", "Unidades": 3811}, {"Mes": "2026-06", "Documento": "CRK", "Unidades": 164}, {"Mes": "2026-06", "Documento": "CRT", "Unidades": 65810}, {"Mes": "2026-06", "Documento": "CTT", "Unidades": 15541}, {"Mes": "2026-06", "Documento": "PED_REABA", "Unidades": 9290}, {"Mes": "2026-07", "Documento": "CPE", "Unidades": 10}, {"Mes": "2026-07", "Documento": "CPF", "Unidades": 297}, {"Mes": "2026-07", "Documento": "CPG", "Unidades": 254889}, {"Mes": "2026-07", "Documento": "CPL", "Unidades": 300}, {"Mes": "2026-07", "Documento": "CPS", "Unidades": 99}, {"Mes": "2026-07", "Documento": "CPV", "Unidades": 197368}, {"Mes": "2026-07", "Documento": "CPW", "Unidades": 3648}, {"Mes": "2026-07", "Documento": "CPY", "Unidades": 786841}, {"Mes": "2026-07", "Documento": "CPZ", "Unidades": 26}, {"Mes": "2026-07", "Documento": "CRB", "Unidades": 163760}, {"Mes": "2026-07", "Documento": "CRT", "Unidades": 6144}, {"Mes": "2026-07", "Documento": "CTT", "Unidades": 4604}], "ciclo_global": [{"Documento": "CPE", "pedidos": 137, "promedio": 0.16}, {"Documento": "CPF", "pedidos": 630, "promedio": 3.0}, {"Documento": "CPG", "pedidos": 95, "promedio": 4.64}, {"Documento": "CPL", "pedidos": 12, "promedio": 3.17}, {"Documento": "CPS", "pedidos": 197, "promedio": 2.52}, {"Documento": "CPV", "pedidos": 421, "promedio": 6.32}, {"Documento": "CPW", "pedidos": 5160, "promedio": 2.37}, {"Documento": "CPX", "pedidos": 2, "promedio": 7.0}, {"Documento": "CPY", "pedidos": 4, "promedio": 4.5}, {"Documento": "CPZ", "pedidos": 27, "promedio": 0.33}, {"Documento": "CRB", "pedidos": 341, "promedio": 1.2}, {"Documento": "CRI", "pedidos": 229, "promedio": 1.09}, {"Documento": "CRK", "pedidos": 16, "promedio": 0.5}, {"Documento": "CRT", "pedidos": 85, "promedio": 1.66}], "tipos": ["CPE", "CPF", "CPG", "CPL", "CPS", "CPV", "CPW", "CPX", "CPY", "CPZ", "CRB", "CRI", "CRK", "CRT", "CTT", "PED_REABA"], "meses": ["2026-04", "2026-05", "2026-06", "2026-07"]};
+
+const INV      = {"inv_det": [{"Consecutivo": 13, "Nombre": "Inventario vestidos de baño", "Mes": "2026-04", "total": 156, "conf_prom": 1.28, "iguales": 2, "faltantes": 26, "sobrantes": 128, "conf_ref": 1.28}, {"Consecutivo": 14, "Nombre": "Inventario vestidos de baño tercer piso", "Mes": "2026-04", "total": 95, "conf_prom": 0.0, "iguales": 0, "faltantes": 95, "sobrantes": 0, "conf_ref": 0.0}, {"Consecutivo": 15, "Nombre": "INVENTARIO DE VESTIDOS DE BAÑO", "Mes": "2026-04", "total": 133, "conf_prom": 88.29, "iguales": 101, "faltantes": 12, "sobrantes": 20, "conf_ref": 75.94}, {"Consecutivo": 16, "Nombre": "CICLICO MATERIA PRIMA", "Mes": "2026-04", "total": 68, "conf_prom": 95.44, "iguales": 65, "faltantes": 0, "sobrantes": 3, "conf_ref": 95.59}, {"Consecutivo": 18, "Nombre": "INVENTARIO FRESHING POP 2", "Mes": "2026-05", "total": 1, "conf_prom": 0.0, "iguales": 0, "faltantes": 0, "sobrantes": 1, "conf_ref": 0.0}, {"Consecutivo": 19, "Nombre": "Ciclico PT", "Mes": "2026-05", "total": 383, "conf_prom": 99.48, "iguales": 381, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.48}, {"Consecutivo": 20, "Nombre": "Cíclico Calle 7", "Mes": "2026-05", "total": 294, "conf_prom": 97.95, "iguales": 287, "faltantes": 5, "sobrantes": 2, "conf_ref": 97.62}, {"Consecutivo": 21, "Nombre": "Cíclico Vestidos de Baño", "Mes": "2026-05", "total": 13, "conf_prom": 100.0, "iguales": 13, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0}, {"Consecutivo": 22, "Nombre": "Cíclico Pt", "Mes": "2026-05", "total": 286, "conf_prom": 99.3, "iguales": 284, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.3}, {"Consecutivo": 23, "Nombre": "Cíclico Kits", "Mes": "2026-05", "total": 171, "conf_prom": 99.12, "iguales": 169, "faltantes": 2, "sobrantes": 0, "conf_ref": 98.83}, {"Consecutivo": 24, "Nombre": "Cíclico PT", "Mes": "2026-05", "total": 274, "conf_prom": 98.54, "iguales": 270, "faltantes": 2, "sobrantes": 2, "conf_ref": 98.54}, {"Consecutivo": 25, "Nombre": "Cíclico Vestidos de Baño", "Mes": "2026-05", "total": 30, "conf_prom": 98.78, "iguales": 25, "faltantes": 3, "sobrantes": 2, "conf_ref": 83.33}, {"Consecutivo": 26, "Nombre": "Cíclico PT", "Mes": "2026-05", "total": 439, "conf_prom": 99.54, "iguales": 437, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.54}, {"Consecutivo": 28, "Nombre": "ciclico PT", "Mes": "2026-06", "total": 148, "conf_prom": 76.35, "iguales": 113, "faltantes": 35, "sobrantes": 0, "conf_ref": 76.35}, {"Consecutivo": 29, "Nombre": "MP", "Mes": "2026-06", "total": 17, "conf_prom": 100.0, "iguales": 17, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0}, {"Consecutivo": 30, "Nombre": "ME", "Mes": "2026-06", "total": 193, "conf_prom": 100.0, "iguales": 193, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0}, {"Consecutivo": 31, "Nombre": "PT", "Mes": "2026-06", "total": 357, "conf_prom": 100.0, "iguales": 357, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0}, {"Consecutivo": 32, "Nombre": "pt", "Mes": "2026-06", "total": 172, "conf_prom": 99.97, "iguales": 171, "faltantes": 0, "sobrantes": 1, "conf_ref": 99.42}, {"Consecutivo": 33, "Nombre": "pt", "Mes": "2026-06", "total": 186, "conf_prom": 98.92, "iguales": 184, "faltantes": 1, "sobrantes": 1, "conf_ref": 98.92}, {"Consecutivo": 34, "Nombre": "picking dinamico", "Mes": "2026-06", "total": 795, "conf_prom": 82.98, "iguales": 615, "faltantes": 148, "sobrantes": 32, "conf_ref": 77.36}, {"Consecutivo": 35, "Nombre": "MP", "Mes": "2026-06", "total": 141, "conf_prom": 85.82, "iguales": 121, "faltantes": 20, "sobrantes": 0, "conf_ref": 85.82}, {"Consecutivo": 36, "Nombre": "pt", "Mes": "2026-07", "total": 33, "conf_prom": 100.0, "iguales": 33, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0}, {"Consecutivo": 37, "Nombre": "modulo 6", "Mes": "2026-07", "total": 64, "conf_prom": 91.47, "iguales": 57, "faltantes": 3, "sobrantes": 4, "conf_ref": 89.06}], "kpi_meses": [{"Mes": "2026-04", "conf_pct": 37.2, "contenedores": 452, "conteos": 4, "faltantes": 133, "sobrantes": 151}, {"Mes": "2026-05", "conf_pct": 98.7, "contenedores": 1891, "conteos": 9, "faltantes": 15, "sobrantes": 10}, {"Mes": "2026-06", "conf_pct": 88.2, "contenedores": 2009, "conteos": 8, "faltantes": 204, "sobrantes": 34}, {"Mes": "2026-07", "conf_pct": 92.8, "contenedores": 97, "conteos": 2, "faltantes": 3, "sobrantes": 4}], "total_difs": {"faltantes": 355, "sobrantes": 199}, "ciclo_pt": [{"Consecutivo": 19, "Nombre": "Ciclico PT", "Mes": "2026-05", "contenedores": 383, "conf_ref": 99.5}, {"Consecutivo": 22, "Nombre": "Cíclico Pt", "Mes": "2026-05", "contenedores": 286, "conf_ref": 99.3}, {"Consecutivo": 24, "Nombre": "Cíclico PT", "Mes": "2026-05", "contenedores": 274, "conf_ref": 98.5}, {"Consecutivo": 26, "Nombre": "Cíclico PT", "Mes": "2026-05", "contenedores": 439, "conf_ref": 99.5}, {"Consecutivo": 28, "Nombre": "ciclico PT", "Mes": "2026-06", "contenedores": 148, "conf_ref": 76.4}, {"Consecutivo": 31, "Nombre": "PT", "Mes": "2026-06", "contenedores": 357, "conf_ref": 100.0}, {"Consecutivo": 32, "Nombre": "pt", "Mes": "2026-06", "contenedores": 172, "conf_ref": 99.4}, {"Consecutivo": 33, "Nombre": "pt", "Mes": "2026-06", "contenedores": 186, "conf_ref": 98.9}, {"Consecutivo": 36, "Nombre": "pt", "Mes": "2026-07", "contenedores": 33, "conf_ref": 100.0}], "ciclo_pt_por_mes": [{"Mes": "2026-05", "conteos": 4, "contenedores": 1382}, {"Mes": "2026-06", "conteos": 4, "contenedores": 863}, {"Mes": "2026-07", "conteos": 1, "contenedores": 33}]};
+
+const PICK     = {"pick_mes": [{"Mes": "2026-04", "jornadas": 76, "pedidos": 2223, "unidades": 127694, "minutos": 27368.2, "uds_x_min": 4.67}, {"Mes": "2026-05", "jornadas": 76, "pedidos": 2671, "unidades": 142809, "minutos": 25517.39, "uds_x_min": 5.6}, {"Mes": "2026-06", "jornadas": 72, "pedidos": 3273, "unidades": 129201, "minutos": 20216.65, "uds_x_min": 6.39}, {"Mes": "2026-07", "jornadas": 12, "pedidos": 414, "unidades": 36275, "minutos": 2663.91, "uds_x_min": 13.62}], "pick_op_mes": [{"Mes": "2026-04", "Nombre": "Abelardo Botero", "jornadas": 5, "unidades": 929, "minutos": 134.86, "uds_hora": 413.3, "uds_x_min": 6.89}, {"Mes": "2026-04", "Nombre": "Alejandro Herrera Zapata", "jornadas": 20, "unidades": 33172, "minutos": 8115.94, "uds_hora": 245.2, "uds_x_min": 4.09}, {"Mes": "2026-04", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 128, "minutos": 117.35, "uds_hora": 65.4, "uds_x_min": 1.09}, {"Mes": "2026-04", "Nombre": "Esteban Montoya Cacante", "jornadas": 5, "unidades": 132, "minutos": 899.78, "uds_hora": 8.8, "uds_x_min": 0.15}, {"Mes": "2026-04", "Nombre": "Fabian Hernandez", "jornadas": 20, "unidades": 30691, "minutos": 8536.24, "uds_hora": 215.7, "uds_x_min": 3.6}, {"Mes": "2026-04", "Nombre": "Juan Pablo Sáenz", "jornadas": 2, "unidades": 1118, "minutos": 42.48, "uds_hora": 1579.1, "uds_x_min": 26.32}, {"Mes": "2026-04", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 51617, "minutos": 8410.42, "uds_hora": 368.2, "uds_x_min": 6.14}, {"Mes": "2026-04", "Nombre": "Santiago Ayala Cardenas", "jornadas": 5, "unidades": 9640, "minutos": 992.9, "uds_hora": 582.5, "uds_x_min": 9.71}, {"Mes": "2026-04", "Nombre": "Yojan Olvery Betancur Ospina", "jornadas": 1, "unidades": 267, "minutos": 118.23, "uds_hora": 135.5, "uds_x_min": 2.26}, {"Mes": "2026-05", "Nombre": "Abelardo Botero", "jornadas": 15, "unidades": 10609, "minutos": 2204.75, "uds_hora": 288.7, "uds_x_min": 4.81}, {"Mes": "2026-05", "Nombre": "Alejandro Herrera Zapata", "jornadas": 5, "unidades": 6152, "minutos": 1184.25, "uds_hora": 311.7, "uds_x_min": 5.19}, {"Mes": "2026-05", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 9, "minutos": 71.68, "uds_hora": 7.5, "uds_x_min": 0.13}, {"Mes": "2026-05", "Nombre": "Esteban Montoya Cacante", "jornadas": 5, "unidades": 73, "minutos": 391.35, "uds_hora": 11.2, "uds_x_min": 0.19}, {"Mes": "2026-05", "Nombre": "Fabian Hernandez", "jornadas": 18, "unidades": 46889, "minutos": 7777.85, "uds_hora": 361.7, "uds_x_min": 6.03}, {"Mes": "2026-05", "Nombre": "Johan Smith Carmona Hernandez", "jornadas": 12, "unidades": 26021, "minutos": 4746.4, "uds_hora": 328.9, "uds_x_min": 5.48}, {"Mes": "2026-05", "Nombre": "Juan Fernando Gallego", "jornadas": 2, "unidades": 13560, "minutos": 396.85, "uds_hora": 2050.1, "uds_x_min": 34.17}, {"Mes": "2026-05", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 38597, "minutos": 8607.88, "uds_hora": 269.0, "uds_x_min": 4.48}, {"Mes": "2026-05", "Nombre": "Santiago Ayala Cardenas", "jornadas": 1, "unidades": 899, "minutos": 136.38, "uds_hora": 395.5, "uds_x_min": 6.59}, {"Mes": "2026-06", "Nombre": "Abelardo Botero", "jornadas": 10, "unidades": 29739, "minutos": 681.51, "uds_hora": 2618.2, "uds_x_min": 43.64}, {"Mes": "2026-06", "Nombre": "Alejandro Herrera Zapata", "jornadas": 3, "unidades": 648, "minutos": 205.24, "uds_hora": 189.4, "uds_x_min": 3.16}, {"Mes": "2026-06", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 89, "minutos": 44.6, "uds_hora": 119.7, "uds_x_min": 2.0}, {"Mes": "2026-06", "Nombre": "Esteban Montoya Cacante", "jornadas": 4, "unidades": 14, "minutos": 210.63, "uds_hora": 4.0, "uds_x_min": 0.07}, {"Mes": "2026-06", "Nombre": "Fabian Hernandez", "jornadas": 17, "unidades": 19349, "minutos": 4227.08, "uds_hora": 274.6, "uds_x_min": 4.58}, {"Mes": "2026-06", "Nombre": "Johan Smith Carmona Hernandez", "jornadas": 15, "unidades": 28506, "minutos": 6009.26, "uds_hora": 284.6, "uds_x_min": 4.74}, {"Mes": "2026-06", "Nombre": "Juan Pablo Sáenz", "jornadas": 1, "unidades": 150, "minutos": 18.25, "uds_hora": 493.2, "uds_x_min": 8.22}, {"Mes": "2026-06", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 48151, "minutos": 8095.55, "uds_hora": 356.9, "uds_x_min": 5.95}, {"Mes": "2026-06", "Nombre": "Santiago Ayala Cardenas", "jornadas": 3, "unidades": 2554, "minutos": 724.53, "uds_hora": 211.5, "uds_x_min": 3.53}, {"Mes": "2026-06", "Nombre": "Santiago Montoya Montoya", "jornadas": 1, "unidades": 1, "minutos": 0.0, "uds_hora": 0, "uds_x_min": 0}, {"Mes": "2026-07", "Nombre": "Abelardo Botero", "jornadas": 1, "unidades": 390, "minutos": 31.05, "uds_hora": 753.6, "uds_x_min": 12.56}, {"Mes": "2026-07", "Nombre": "Alejandro Herrera Zapata", "jornadas": 2, "unidades": 2539, "minutos": 539.36, "uds_hora": 282.4, "uds_x_min": 4.71}, {"Mes": "2026-07", "Nombre": "Esteban Montoya Cacante", "jornadas": 2, "unidades": 11, "minutos": 72.7, "uds_hora": 9.1, "uds_x_min": 0.15}, {"Mes": "2026-07", "Nombre": "Fabian Hernandez", "jornadas": 2, "unidades": 6141, "minutos": 986.52, "uds_hora": 373.5, "uds_x_min": 6.22}, {"Mes": "2026-07", "Nombre": "Juan Fernando Gallego", "jornadas": 2, "unidades": 15051, "minutos": 125.37, "uds_hora": 7203.2, "uds_x_min": 120.05}, {"Mes": "2026-07", "Nombre": "Samuel Jimenez Arenas", "jornadas": 2, "unidades": 11043, "minutos": 847.94, "uds_hora": 781.4, "uds_x_min": 13.02}, {"Mes": "2026-07", "Nombre": "Santiago Ayala Cardenas", "jornadas": 1, "unidades": 1100, "minutos": 60.97, "uds_hora": 1082.5, "uds_x_min": 18.04}]};
+
+const ML = {"2026-01":"Ene","2026-02":"Feb","2026-03":"Mar","2026-04":"Abr","2026-05":"May","2026-06":"Jun","2026-07":"Jul","2026-08":"Ago","2026-09":"Sep","2026-10":"Oct","2026-11":"Nov","2026-12":"Dic"};
+const TIPO_COL = ["#4a8fff","#36c97a","#f5a524","#9b7cf4","#f25757","#2dd4bf","#e879f9","#fb923c","#a3e635","#67e8f9","#fbbf24","#a78bfa","#34d399","#f87171"];
+const charts={};
+
+function fmt(n,d=2){return n==null?'—':Number(n).toFixed(d);}
+function fmtK(n){if(n>=1e6)return (n/1e6).toFixed(1)+'M';if(n>=1e3)return (n/1e3).toFixed(0)+'K';return n.toLocaleString('es-CO');}
+function cc(v){return v>=97?'#36c97a':v>=90?'#f5a524':'#f25757';}
+function cb(v){if(v>=97)return '<span class="badge b-green">Óptimo</span>';if(v>=90)return '<span class="badge b-amber">Revisar</span>';return '<span class="badge b-red">Crítico</span>';}
+function cicloColor(v){return v<=2?'#36c97a':v<=5?'#f5a524':'#f25757';}
+function cicloSem(v){if(v<=2)return '<span class="badge b-green">≤2d</span>';if(v<=5)return '<span class="badge b-amber">≤5d</span>';return '<span class="badge b-red">>5d</span>';}
+
+function mkChart(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),cfg);}
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+const gOpts=(yl='')=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11},callback:v=>v+(yl?yl:'')}}}});
+
+function showPage(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='resumen')renderResumen();
+  if(id==='ciclo')renderCiclo();
+  if(id==='inventario')renderInventario();
+  if(id==='picking')renderPicking();
+}
+
+// ── RESUMEN ─────────────────────────────────────────────
+function renderResumen(){
+  const meses = activeMeses();
+  const tipos = activeTipos();
+
+  // Ciclo ponderado filtrado
+  const mesPondFilt = D.mes_pond.filter(m=>meses.includes(m.Mes));
+  const mesLabels   = mesPondFilt.map(m=>ML[m.Mes]);
+  let promData = mesPondFilt.map(m=>m.promedio);
+  let medData  = mesPondFilt.map(m=>m.mediana);
+  if(tipos){
+    // recalcular desde ciclo_mes_tipo filtrado
+    promData = meses.map(mes=>{
+      const rows = D.ciclo_mes_tipo.filter(r=>r.Mes===mes&&tipos.includes(r.Documento));
+      const totP=rows.reduce((a,b)=>a+b.pedidos,0);
+      return totP>0?+(rows.reduce((a,b)=>a+b.promedio*b.pedidos,0)/totP).toFixed(2):null;
+    });
+    medData = promData; // approx
+  }
+  const barColors = mesPondFilt.map((_,i)=>['#f25757','#f5a524','#36c97a'][i]||'#4a8fff');
+  mkChart('c-res-ciclo',{type:'bar',data:{
+    labels: mesLabels,
+    datasets:[
+      {label:'Promedio',data:promData,backgroundColor:barColors,borderRadius:5,order:2},
+      {label:'Mediana',data:medData,type:'line',borderColor:'#4a8fff',pointRadius:5,pointBackgroundColor:'#4a8fff',borderWidth:2,fill:false,order:1}
+    ]
+  },options:{...gOpts(' d'),plugins:{legend:{display:false}}}});
+
+  // Picking tendencia filtrada por mes
+  const pickFilt = PICK.pick_mes.filter(m=>meses.includes(m.Mes));
+  mkChart('c-res-pick',{type:'line',data:{
+    labels: pickFilt.map(m=>ML[m.Mes]),
+    datasets:[
+      {data:pickFilt.map(m=>m.uds_x_min),borderColor:'#4a8fff',backgroundColor:'rgba(74,143,255,0.1)',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:'#4a8fff',borderWidth:2},
+      {data:pickFilt.map(()=>5.5),borderColor:'#f5a524',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}
+    ]
+  },options:{...gOpts(' u/m'),plugins:{legend:{display:false}}}});
+
+  // Donut y stack — delegar con estado global
+  renderDonut(donutMode||'ped');
+  renderStack(stackMode||'ped');
+
+  // Tabla evolución — filtrar por tipos del slicer
+  let tiposVolumen = D.ciclo_global.filter(t=>t.pedidos>=30);
+  if(tipos) tiposVolumen = tiposVolumen.filter(t=>tipos.includes(t.Documento));
+  tiposVolumen.sort((a,b)=>b.pedidos-a.pedidos);
+  const rows = tiposVolumen.map(tg => {
+    const apr = D.ciclo_mes_tipo.find(r=>r.Mes==='2026-04'&&r.Documento===tg.Documento);
+    const may = D.ciclo_mes_tipo.find(r=>r.Mes==='2026-05'&&r.Documento===tg.Documento);
+    const jun = D.ciclo_mes_tipo.find(r=>r.Mes==='2026-06'&&r.Documento===tg.Documento);
+    const vals = [apr,may,jun].map(r=>r?.promedio??null);
+    const mesesCols = ['2026-04','2026-05','2026-06'].map((m,i)=>{
+      const v=vals[i]; const dim=!meses.includes(m)?'opacity:0.3;':'';
+      return `<td class="r" style="color:${v!=null?cicloColor(v):'var(--text3)'};${dim}">${v!=null?fmt(v,2)+'d':'—'}</td>`;
+    });
+    const first=vals.find(v=>v!=null); const last=[...vals].reverse().find(v=>v!=null);
+    let tClass='arr-neu',trend='—';
+    if(first!=null&&last!=null&&first!==last){const d=last-first;tClass=d<0?'arr-down':'arr-up';trend=(d<0?'↓ ':'↑ ')+Math.abs(d).toFixed(1)+'d';}
+    else if(first!=null) trend='≈ estable';
+    return `<tr>
+      <td><span class="badge b-neu">${tg.Documento}</span></td>
+      <td class="r">${tg.pedidos}</td>
+      ${mesesCols.join('')}
+      <td><span class="${tClass}">${trend}</span></td>
+      <td>${cicloSem(tg.promedio)} ${fmt(tg.promedio,2)}d</td>
+    </tr>`;
+  });
+  document.getElementById('res-ciclo-tabla').innerHTML=rows.join('') || '<tr><td colspan="7" style="color:var(--text3);text-align:center;padding:1rem;">Sin datos para el filtro seleccionado</td></tr>';
+}
+
+// ── CICLO TABLE SORT ────────────────────────────────────────
+let cicloTableData = [];
+let cicloSortCol = 'uds';
+let cicloSortAsc = false;
+let cicloSelectedTipo = null; // Power BI cross-filter state
+
+function sortCicloTable(col){
+  if(cicloSortCol === col) cicloSortAsc = !cicloSortAsc;
+  else { cicloSortCol = col; cicloSortAsc = col === 'tipo'; }
+  drawCicloTable();
+}
+
+function selectTipo(t){
+  cicloSelectedTipo = cicloSelectedTipo === t ? null : t;
+  GF.tipo = cicloSelectedTipo;
+  updateFilterIndicator();
+  renderCiclo();
+}
+
+function drawCicloTable(){
+  const totU = cicloTableData.reduce((a,b)=>a+b.uds,0);
+  const sorted = [...cicloTableData].sort((a,b)=>{
+    let va, vb;
+    if(cicloSortCol==='tipo')   { va=a.t; vb=b.t; return cicloSortAsc?(va>vb?1:-1):(va<vb?1:-1); }
+    if(cicloSortCol==='pedidos'){ va=a.pedidos||0; vb=b.pedidos||0; }
+    if(cicloSortCol==='uds')    { va=a.uds; vb=b.uds; }
+    if(cicloSortCol==='pct')    { va=a.uds/totU; vb=b.uds/totU; }
+    if(cicloSortCol==='ciclo')  { va=a.avg??-1; vb=b.avg??-1; }
+    return cicloSortAsc ? va-vb : vb-va;
+  });
+
+  ['tipo','pedidos','uds','pct','ciclo'].forEach(c=>{
+    const el = document.getElementById('sort-ico-'+c);
+    if(!el) return;
+    el.textContent = c!==cicloSortCol ? ' ↕' : cicloSortAsc ? ' ↑' : ' ↓';
+    el.style.color = c===cicloSortCol ? '#4a8fff' : '#4a5168';
+  });
+
+  document.getElementById('ciclo-uds-table').innerHTML = sorted.map(row=>{
+    const pct = (row.uds/totU*100).toFixed(1);
+    const isSelected = cicloSelectedTipo === row.t;
+    const isDimmed   = cicloSelectedTipo && !isSelected;
+    const rowStyle   = isSelected
+      ? 'background:rgba(74,143,255,0.12);cursor:pointer;'
+      : isDimmed ? 'opacity:0.35;cursor:pointer;' : 'cursor:pointer;';
+    const badgeStyle = isSelected
+      ? 'background:var(--blue);color:#fff;'
+      : 'background:var(--bg4);color:var(--text2);';
+    return `<tr onclick="selectTipo('${row.t}')" style="${rowStyle}" title="Clic para filtrar por ${row.t}">
+      <td><span class="badge" style="${badgeStyle}">${row.t}${isSelected?' ✕':''}</span></td>
+      <td class="r">${row.pedidos??'—'}</td>
+      <td class="r">${fmtK(row.uds)}</td>
+      <td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:${pct}%;background:${isSelected?'#4a8fff':isDimmed?'#4a5168':'#4a8fff'};"></div></div><span class="pct">${pct}%</span></div></td>
+      <td class="r" style="color:${row.avg!=null?cicloColor(row.avg):'inherit'};">${row.avg!=null?fmt(row.avg,2)+'d':'—'}</td>
+      <td>${row.avg!=null?cicloSem(row.avg):'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── CICLO ────────────────────────────────────────────────
+function renderCiclo(){
+  const mes  = document.getElementById('c-mes-sel')?.value  || 'todos';
+  const tsel = document.getElementById('c-tipo-sel');
+  if(tsel && tsel.options.length===1){
+    D.tipos.forEach(t=>{ const o=document.createElement('option'); o.value=t; o.textContent=t; tsel.appendChild(o); });
+  }
+
+  const activeTipo = cicloSelectedTipo;
+  // Combinar filtro local de mes con filtro global
+  let rows = D.ciclo_mes_tipo;
+  if(GF.mes) rows = rows.filter(r=>r.Mes===GF.mes);
+  else if(mes!=='todos') rows = rows.filter(r=>r.Mes===mes);
+  if(GF.tipo) rows = rows.filter(r=>r.Documento===GF.tipo);
+  if(activeTipo) rows = rows.filter(r=>r.Documento===activeTipo);
+
+  // Agrupar por tipo (sobre datos filtrados)
+  const byTipoFull = {}; // sin filtro de tipo, para barras con dimming
+  let rowsFull = D.ciclo_mes_tipo;
+  if(mes !== 'todos') rowsFull = rowsFull.filter(r=>r.Mes===mes);
+  rowsFull.forEach(r=>{
+    if(!byTipoFull[r.Documento]) byTipoFull[r.Documento]={sumP:0,n:0,pedidos:0};
+    byTipoFull[r.Documento].sumP+=r.promedio*r.pedidos;
+    byTipoFull[r.Documento].n+=r.pedidos;
+    byTipoFull[r.Documento].pedidos+=r.pedidos;
+  });
+  const tipoArrFull = Object.entries(byTipoFull)
+    .map(([t,v])=>({t,avg:+(v.sumP/v.n).toFixed(2),pedidos:v.pedidos}))
+    .filter(x=>x.pedidos>0).sort((a,b)=>b.avg-a.avg);
+
+  // Mini stats sobre selección activa
+  const byTipo={};
+  rows.forEach(r=>{
+    if(!byTipo[r.Documento])byTipo[r.Documento]={sumP:0,n:0,pedidos:0};
+    byTipo[r.Documento].sumP+=r.promedio*r.pedidos;
+    byTipo[r.Documento].n+=r.pedidos;
+    byTipo[r.Documento].pedidos+=r.pedidos;
+  });
+  const tipoArr=Object.entries(byTipo).map(([t,v])=>({t,avg:+(v.sumP/v.n).toFixed(2),pedidos:v.pedidos})).filter(x=>x.pedidos>0).sort((a,b)=>b.avg-a.avg);
+  const avgAll=tipoArr.length?tipoArr.reduce((a,b)=>a+b.avg*b.pedidos,0)/tipoArr.reduce((a,b)=>a+b.pedidos,0):0;
+  const maxT=tipoArr[0]; const minT=[...tipoArr].reverse().find(x=>x.avg>0);
+
+  // Chip de filtro activo
+  const chipHtml = activeTipo
+    ? `<div style="display:inline-flex;align-items:center;gap:6px;background:var(--blue-d);border:1px solid rgba(74,143,255,0.3);border-radius:99px;padding:3px 10px;font-size:12px;color:var(--blue);margin-left:12px;">
+        Filtrando: <strong>${activeTipo}</strong>
+        <span onclick="selectTipo('${activeTipo}')" style="cursor:pointer;font-size:14px;line-height:1;" title="Quitar filtro">✕</span>
+       </div>` : '';
+
+  document.getElementById('ciclo-mini').innerHTML=`
+    <div class="mini-stat"><div class="mini-stat-lbl">Ciclo promedio ${activeTipo?activeTipo:'ponderado'}</div><div class="mini-stat-val" style="color:#4a8fff;">${fmt(avgAll,2)} d</div></div>
+    <div class="mini-stat"><div class="mini-stat-lbl">Tipo más lento</div><div class="mini-stat-val" style="color:#f25757;">${maxT?maxT.t+' · '+maxT.avg+'d':'—'}</div></div>
+    <div class="mini-stat"><div class="mini-stat-lbl">Tipo más rápido</div><div class="mini-stat-val" style="color:#36c97a;">${minT?minT.t+' · '+minT.avg+'d':'—'}</div></div>
+    <div class="mini-stat" style="display:flex;align-items:center;">${chipHtml||'<div class="mini-stat-lbl" style="color:var(--text3);font-size:11px;">Clic en barra o fila<br>para filtrar</div>'}</div>`;
+
+  // Gráfica barras — todas con dimming, barra seleccionada resaltada
+  const barColors = tipoArrFull.map(x=>
+    !activeTipo ? cicloColor(x.avg) :
+    x.t===activeTipo ? cicloColor(x.avg) : 'rgba(74,81,104,0.35)'
+  );
+  const barBorders = tipoArrFull.map(x=> x.t===activeTipo ? '#ffffff' : 'transparent');
+
+  destroyChart('c-ciclo-tipo');
+  charts['c-ciclo-tipo'] = new Chart(document.getElementById('c-ciclo-tipo'), {
+    type:'bar',
+    data:{
+      labels: tipoArrFull.map(x=>x.t),
+      datasets:[{data:tipoArrFull.map(x=>x.avg), backgroundColor:barColors, borderColor:barBorders, borderWidth:2, borderRadius:4}]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.parsed.y.toFixed(2)}d`}}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11}}},
+        y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11},callback:v=>v+' d'}}
+      },
+      onClick(_evt, els){
+        if(els.length){ const t=tipoArrFull[els[0].index].t; selectTipo(t); setGlobalTipo(t); }
+      }
+    }
+  });
+  document.getElementById('c-ciclo-tipo').style.cursor = 'pointer';
+
+  // Gráfica evolución — 5 líneas con dimming, clic en punto propaga filtro
+  const tiposEvo5 = ['CPW','CPF','CPV','CRB','CPS'].filter(t=>D.tipos.includes(t));
+  const tiposEvo  = activeTipo && !tiposEvo5.includes(activeTipo)
+    ? [activeTipo]
+    : tiposEvo5;
+
+  const evoDatasets = tiposEvo.map((t,i)=>{
+    const isDimmed = activeTipo && t !== activeTipo;
+    return {
+      label: t,
+      data: D.meses.map(m=>{ const r=D.ciclo_mes_tipo.find(x=>x.Mes===m&&x.Documento===t); return r?r.promedio:null; }),
+      borderColor:  isDimmed ? 'rgba(74,81,104,0.3)' : TIPO_COL[i],
+      pointBackgroundColor: isDimmed ? 'rgba(74,81,104,0.3)' : TIPO_COL[i],
+      backgroundColor: 'transparent',
+      tension:.35, pointRadius: isDimmed ? 3 : 5,
+      borderWidth: isDimmed ? 1 : 2.5,
+      spanGaps: true
+    };
+  });
+
+  document.getElementById('ciclo-evo-legend').innerHTML = tiposEvo.map((t,i)=>{
+    const isDimmed = activeTipo && t !== activeTipo;
+    return `<span class="leg-item" onclick="selectTipo('${t}')" style="cursor:pointer;opacity:${isDimmed?0.4:1};">
+      <span class="leg-sq" style="background:${TIPO_COL[i]};"></span>${t}
+    </span>`;
+  }).join('');
+
+  destroyChart('c-ciclo-evo');
+  charts['c-ciclo-evo'] = new Chart(document.getElementById('c-ciclo-evo'), {
+    type:'line',
+    data:{ labels:D.meses.map(m=>ML[m]), datasets:evoDatasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}d`}}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11}}},
+        y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11},callback:v=>v+' d'}}
+      },
+      onClick(_evt, els){
+        if(els.length){
+          const t = evoDatasets[els[0].datasetIndex]?.label;
+          if(t){ selectTipo(t); setGlobalTipo(t); }
+        }
+      }
+    }
+  });
+  document.getElementById('c-ciclo-evo').style.cursor = 'pointer';
+
+  // Tabla uds — filtrada por tipo activo
+  let udsRows = D.uds_mes_tipo;
+  if(mes !== 'todos') udsRows = udsRows.filter(r=>r.Mes===mes);
+  const byU={};
+  udsRows.forEach(r=>{if(!byU[r.Documento])byU[r.Documento]=0;byU[r.Documento]+=r.Unidades;});
+  cicloTableData = Object.entries(byU).map(([t,uds])=>{
+    const cInfo=byTipoFull[t];
+    return {t, uds, avg:cInfo?+(cInfo.sumP/cInfo.n).toFixed(2):null, pedidos:cInfo?cInfo.pedidos:null};
+  });
+  drawCicloTable();
+}
+
+// ── INVENTARIO ──────────────────────────────────────────
+function renderInventario(){
+  // Clasificación PT / MP a partir del Nombre del conteo cíclico
+  const claseInv = nombre => /\bpt\b/i.test(nombre) ? 'PT' : (/\bmp\b/i.test(nombre) || /materia prima/i.test(nombre)) ? 'MP' : null;
+
+  const invMeses = [...new Set(INV.inv_det.map(r=>r.Mes))].sort();
+  const agregarPorMes = filtroFn => {
+    const acc = {};
+    invMeses.forEach(m=>{ acc[m] = {sumConf:0, sumTotal:0, conteos:0, contenedores:0}; });
+    INV.inv_det.forEach(r=>{
+      if(!filtroFn(r)) return;
+      const a = acc[r.Mes];
+      a.sumConf += r.conf_ref * r.total;
+      a.sumTotal += r.total;
+      a.conteos += 1;
+      a.contenedores += r.total;
+    });
+    return acc;
+  };
+  const accPT     = agregarPorMes(r=>claseInv(r.Nombre)==='PT');
+  const accMP     = agregarPorMes(r=>claseInv(r.Nombre)==='MP');
+  const accGlobal = agregarPorMes(()=>true);
+  const serieConf = acc => invMeses.map(m=> acc[m].sumTotal>0 ? +(acc[m].sumConf/acc[m].sumTotal).toFixed(1) : null);
+
+  mkChart('c-inv-evo',{
+    type:'line',
+    data:{
+      labels: invMeses.map(m=>ML[m]||m),
+      datasets:[
+        {label:'PT',     data:serieConf(accPT),     borderColor:'#36c97a', backgroundColor:'transparent', pointBackgroundColor:'#36c97a', tension:.35, pointRadius:4, borderWidth:2.5, spanGaps:true},
+        {label:'MP',     data:serieConf(accMP),     borderColor:'#4a8fff', backgroundColor:'transparent', pointBackgroundColor:'#4a8fff', tension:.35, pointRadius:4, borderWidth:2.5, spanGaps:true},
+        {label:'Global', data:serieConf(accGlobal), borderColor:'#8b92a8', backgroundColor:'transparent', pointBackgroundColor:'#8b92a8', borderDash:[5,4], tension:.35, pointRadius:3, borderWidth:2, spanGaps:true},
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true, labels:{color:'#8b92a8', font:{size:11}, boxWidth:10}},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y==null?'—':ctx.parsed.y.toFixed(1)+'%'}`}}
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11}}},
+        y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11},callback:v=>v+'%'}}
+      }
+    }
+  });
+
+  mkChart('c-inv-conteos',{
+    type:'bar',
+    data:{
+      labels: invMeses.map(m=>ML[m]||m),
+      datasets:[
+        {label:'PT', data:invMeses.map(m=>accPT[m].conteos), backgroundColor:'#36c97a', borderRadius:3, contenedores:invMeses.map(m=>accPT[m].contenedores)},
+        {label:'MP', data:invMeses.map(m=>accMP[m].conteos), backgroundColor:'#4a8fff', borderRadius:3, contenedores:invMeses.map(m=>accMP[m].contenedores)},
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:true, labels:{color:'#8b92a8', font:{size:11}, boxWidth:10}},
+        tooltip:{callbacks:{label:ctx=>{
+          const cont = ctx.dataset.contenedores[ctx.dataIndex];
+          return ` ${ctx.dataset.label}: ${ctx.parsed.y} conteos · ${cont.toLocaleString('es-CO')} contenedores`;
+        }}}
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11}}},
+        y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11}},beginAtZero:true}
+      }
+    }
+  });
+
+  document.getElementById('inv-table').innerHTML=INV.inv_det.map(r=>`<tr>
+    <td>${r.Consecutivo}</td><td>${r.Nombre}</td>
+    <td><span class="badge b-neu">${ML[r.Mes]||r.Mes} 2026</span></td>
+    <td class="r">${r.total}</td>
+    <td class="r" style="color:#36c97a;">${r.iguales}</td>
+    <td class="r" style="color:${r.faltantes>0?'#f25757':'#4a5168'};">${r.faltantes}</td>
+    <td class="r" style="color:${r.sobrantes>0?'#f5a524':'#4a5168'};">${r.sobrantes}</td>
+    <td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:${r.conf_ref}%;background:${cc(r.conf_ref)};"></div></div><span class="pct" style="color:${cc(r.conf_ref)};">${fmt(r.conf_ref,1)}%</span></div></td>
+    <td>${cb(r.conf_ref)}</td>
+  </tr>`).join('');
+
+  // KPI cards dinámicas
+  const kpis = INV.kpi_meses || [];
+  const difs = INV.total_difs || {faltantes:0,sobrantes:0};
+  const last2 = kpis.slice(-2);
+  const clsConf=c=>c>=97?'c-green':c>=92?'c-amber':'c-red';
+  const colConf=c=>c>=97?'var(--green)':c>=92?'var(--amber)':'var(--red)';
+  document.getElementById('inv-kpi-grid').innerHTML = last2.map(m=>`
+    <div class="kpi ${clsConf(m.conf_pct)}">
+      <div class="kpi-lbl">Confiabilidad ${ML[m.Mes]||m.Mes}</div>
+      <div class="kpi-val" style="color:${colConf(m.conf_pct)};">${fmt(m.conf_pct,1)}%</div>
+      <div class="kpi-sub">${m.contenedores.toLocaleString('es-CO')} contenedores · ${m.conteos} conteos</div>
+    </div>`).join('')+`
+    <div class="kpi c-red">
+      <div class="kpi-lbl">Total diferencias</div>
+      <div class="kpi-val" style="color:var(--red);">${difs.faltantes+difs.sobrantes}</div>
+      <div class="kpi-sub">${difs.faltantes} faltantes · ${difs.sobrantes} sobrantes</div>
+    </div>`;
+
+  // Cobertura cíclicos PT
+  const UNIVERSO_PT = 11588;
+  const ptMes = INV.ciclo_pt_por_mes || [];
+  const ptDet = INV.ciclo_pt || [];
+  const totalRevisados = ptDet.reduce((s,r)=>s+r.contenedores,0);
+  const cobPct = totalRevisados>0 ? (totalRevisados/UNIVERSO_PT*100).toFixed(1) : 0;
+  const cobColor = cobPct>=20?'var(--green)':cobPct>=10?'var(--amber)':'var(--red)';
+
+  const porMesHTML = ptMes.map(m=>{
+    const pct = (m.contenedores/UNIVERSO_PT*100).toFixed(1);
+    const detalle = ptDet.filter(r=>r.Mes===m.Mes).map(r=>`#${r.Consecutivo}: ${r.contenedores}`).join(' · ');
+    const col = pct>=10?'var(--green)':pct>=5?'var(--amber)':'var(--red)';
+    return `<div style="background:var(--bg3);border-radius:var(--rs);padding:14px 16px;">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">${ML[m.Mes]||m.Mes} 2026 · ${m.conteos} conteos cíclicos PT</div>
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;">
+        <span style="font-size:24px;font-weight:700;color:${col};">${pct}%</span>
+        <span style="font-size:12px;color:var(--text2);">${m.contenedores.toLocaleString('es-CO')} contenedores revisados</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;">${detalle}</div>
+      <div style="height:7px;background:var(--bg4);border-radius:99px;overflow:hidden;">
+        <div style="height:100%;width:${Math.min(pct,100)}%;background:${col};border-radius:99px;"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const colsCob = ptMes.length>1 ? `repeat(${ptMes.length},1fr)` : '1fr 1fr';
+  const mesLabels = ptMes.map(m=>ML[m.Mes]||m.Mes).join('–');
+
+  const ptTabla = ptDet.map(r=>{
+    const pctR = (r.contenedores/UNIVERSO_PT*100).toFixed(1);
+    const bw   = Math.min(pctR/cobPct*100,100).toFixed(1);
+    const badgeCls = r.Mes===ptMes[ptMes.length-1]?.Mes?'b-red':'b-neu';
+    return `<tr>
+      <td>${r.Consecutivo}</td><td>${r.Nombre}</td>
+      <td><span class="badge ${badgeCls}">${ML[r.Mes]||r.Mes}</span></td>
+      <td class="r">${r.contenedores}</td>
+      <td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:${bw}%;background:var(--blue);"></div></div><span class="pct">${pctR}%</span></div></td>
+      <td style="color:${colConf(r.conf_ref)};">${fmt(r.conf_ref,1)}%</td>
+    </tr>`;
+  }).join('');
+
+  const avgConf = ptDet.length ? (ptDet.reduce((s,r)=>s+r.conf_ref,0)/ptDet.length).toFixed(1) : 0;
+
+  document.getElementById('inv-cobertura-body').innerHTML = `
+    <div style="margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:12px;color:var(--text2);">Cobertura acumulada cíclicos PT (${mesLabels} 2026)</span>
+        <span style="font-size:13px;font-weight:600;color:${cobColor};">${cobPct}% <span style="font-size:11px;font-weight:400;color:var(--text3);">${totalRevisados.toLocaleString('es-CO')} revisados de ${UNIVERSO_PT.toLocaleString('es-CO')}</span></span>
+      </div>
+      <div style="height:10px;background:var(--bg3);border-radius:99px;overflow:hidden;">
+        <div style="height:100%;width:${Math.min(cobPct,100)}%;background:${cobColor};border-radius:99px;transition:width .6s;"></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:${colsCob};gap:14px;margin-bottom:20px;">${porMesHTML}</div>
+    <div style="font-size:12px;font-weight:600;color:var(--text2);letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border);">Detalle conteos cíclicos PT (universo: ${UNIVERSO_PT.toLocaleString('es-CO')} contenedores)</div>
+    <table>
+      <thead><tr><th>#</th><th>Nombre</th><th>Mes</th><th class="r">Contenedores revisados</th><th class="r">% sobre ${UNIVERSO_PT.toLocaleString('es-CO')} PT</th><th>Confiabilidad</th></tr></thead>
+      <tbody>
+        ${ptTabla}
+        <tr style="border-top:2px solid var(--border2);font-weight:600;">
+          <td colspan="2">Total acumulado PT</td><td></td>
+          <td class="r">${totalRevisados.toLocaleString('es-CO')}</td>
+          <td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:100%;background:${cobColor};"></div></div><span class="pct" style="color:${cobColor};">${cobPct}%</span></div></td>
+          <td style="color:var(--text2);">Promedio: ${avgConf}%</td>
+        </tr>
+      </tbody>
+    </table>`;
+}
+
+// ── PICKING ─────────────────────────────────────────────
+function renderPicking(){
+  const localMes = document.getElementById('p-mes-sel')?.value||'todos';
+  let opRows = PICK.pick_op_mes;
+  if(GF.mes) opRows = opRows.filter(r=>r.Mes===GF.mes);
+  else if(localMes!=='todos') opRows = opRows.filter(r=>r.Mes===localMes);
+  const mes = GF.mes || localMes;
+
+  const byOp={};
+  opRows.forEach(r=>{if(!byOp[r.Nombre])byOp[r.Nombre]={uds:0,min:0,jornadas:0};byOp[r.Nombre].uds+=r.unidades;byOp[r.Nombre].min+=r.minutos;byOp[r.Nombre].jornadas+=r.jornadas;});
+  const opArr=Object.entries(byOp).map(([n,v])=>({nombre:n,uds:v.uds,min:v.min,jornadas:v.jornadas,uds_x_min:v.min>0?+(v.uds/v.min).toFixed(2):0})).filter(o=>o.uds_x_min<30&&o.min>60).sort((a,b)=>b.uds_x_min-a.uds_x_min);
+
+  const totU=opArr.reduce((a,b)=>a+b.uds,0);const totM=opArr.reduce((a,b)=>a+b.min,0);const totJ=opArr.reduce((a,b)=>a+b.jornadas,0);const prom=totM>0?(totU/totM).toFixed(2):0;
+  document.getElementById('pick-mini').innerHTML=`
+    <div class="mini-stat"><div class="mini-stat-lbl">Uds/min equipo</div><div class="mini-stat-val" style="color:${prom>=5.5?'#36c97a':'#f5a524'};">${prom}</div></div>
+    <div class="mini-stat"><div class="mini-stat-lbl">Total unidades</div><div class="mini-stat-val" style="color:#4a8fff;">${fmtK(totU)}</div></div>
+    <div class="mini-stat"><div class="mini-stat-lbl">Jornadas</div><div class="mini-stat-val" style="color:#9b7cf4;">${totJ}</div></div>
+    <div class="mini-stat"><div class="mini-stat-lbl">Operarios activos</div><div class="mini-stat-val" style="color:#2dd4bf;">${opArr.length}</div></div>`;
+
+  const mx=Math.max(...opArr.map(o=>o.uds_x_min));
+  document.getElementById('pick-op-bars').innerHTML=opArr.map(o=>`
+    <div class="op-bar-row">
+      <div class="op-name" title="${o.nombre}">${o.nombre.split(' ')[0]+' '+o.nombre.split(' ').slice(-1)[0]}</div>
+      <div class="op-bar-wrap">
+        <div class="op-bar"><div class="op-bar-fill" style="width:${(o.uds_x_min/mx*100).toFixed(1)}%;background:${o.uds_x_min>=5.5?'#36c97a':'#f5a524'};"></div></div>
+        <span class="op-val" style="color:${o.uds_x_min>=5.5?'#36c97a':'#f5a524'};">${o.uds_x_min} u/m</span>
+      </div>
+    </div>`).join('');
+
+  mkChart('c-pick-trend',{type:'line',data:{labels:PICK.pick_mes.map(m=>ML[m.Mes]),datasets:[{data:PICK.pick_mes.map(m=>m.uds_x_min),borderColor:'#4a8fff',backgroundColor:'rgba(74,143,255,0.1)',fill:true,tension:.4,pointRadius:5,pointBackgroundColor:'#4a8fff',borderWidth:2},{data:[5.5,5.5,5.5],borderColor:'#f5a524',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}]},options:{...gOpts(' u/m'),plugins:{legend:{display:false}}}});
+
+  renderPickOpEvo();
+  renderPickTable(mes);
+}
+
+function renderPickOpEvo(){
+  const validOps = [...new Set(PICK.pick_op_mes.filter(r=>r.minutos>60&&r.uds_x_min<30).map(r=>r.Nombre))].sort();
+  const meses = ['2026-04','2026-05','2026-06'];
+
+  // Calcular global por operario para ordenar
+  const opGlobal = validOps.map(n=>{
+    const rows = PICK.pick_op_mes.filter(r=>r.Nombre===n&&r.minutos>60&&r.uds_x_min<30);
+    const totU = rows.reduce((a,b)=>a+b.unidades,0);
+    const totM = rows.reduce((a,b)=>a+b.minutos,0);
+    return {n, avg: totM>0?+(totU/totM).toFixed(2):0};
+  }).sort((a,b)=>b.avg-a.avg);
+
+  const rows = opGlobal.map(({n, avg})=>{
+    const mesVals = meses.map(m=>{
+      const r = PICK.pick_op_mes.find(x=>x.Nombre===n&&x.Mes===m);
+      return (r&&r.minutos>60&&r.uds_x_min<30) ? r.uds_x_min : null;
+    });
+
+    // Tendencia abr→jun
+    const first = mesVals.find(v=>v!==null);
+    const last  = [...mesVals].reverse().find(v=>v!==null);
+    let trendHtml = '<span style="color:var(--text3);">—</span>';
+    if(first!==null&&last!==null&&first!==last){
+      const d = last - first;
+      trendHtml = d>0
+        ? `<span style="color:var(--green);">↑ +${d.toFixed(2)}</span>`
+        : `<span style="color:var(--red);">↓ ${d.toFixed(2)}</span>`;
+    } else if(first!==null&&last!==null) {
+      trendHtml = `<span style="color:var(--text3);">≈ estable</span>`;
+    }
+
+    const mesCells = mesVals.map(v=>{
+      if(v===null) return `<td class="r" style="color:var(--text3);">—</td>`;
+      const col = v>=5.5?'#36c97a':'#f5a524';
+      const bg  = v>=5.5?'rgba(54,201,122,0.1)':'rgba(245,165,36,0.1)';
+      return `<td class="r" style="color:${col};background:${bg};font-weight:500;font-variant-numeric:tabular-nums;">${v.toFixed(2)}</td>`;
+    }).join('');
+
+    const globalCol = avg>=5.5?'#36c97a':'#f5a524';
+    const shortName = n.split(' ').filter((_,i,a)=>i===0||i===a.length-1).join(' ');
+    return `<tr>
+      <td style="font-weight:500;">${shortName}</td>
+      ${mesCells}
+      <td class="r" style="color:${globalCol};font-weight:600;">${avg.toFixed(2)}</td>
+      <td>${trendHtml}</td>
+    </tr>`;
+  }).join('');
+
+  // Fila de meta
+  const metaCells = meses.map(()=>`<td class="r" style="color:var(--amber);font-style:italic;">5.50</td>`).join('');
+
+  document.getElementById('pick-op-evo-table').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Operario</th>
+          <th class="r">Abr</th>
+          <th class="r">May</th>
+          <th class="r">Jun</th>
+          <th class="r">Global</th>
+          <th>Tendencia</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+        <tr style="border-top:2px solid var(--border2);">
+          <td style="color:var(--amber);font-style:italic;font-size:12px;">Meta</td>
+          ${metaCells}
+          <td class="r" style="color:var(--amber);font-style:italic;">5.50</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>`;
+}
+
+function renderPickTable(mes){
+  const filtOp=mes==='todos'?PICK.pick_op_mes:PICK.pick_op_mes.filter(r=>r.Mes===mes);
+  document.getElementById('pick-table').innerHTML=filtOp.filter(r=>r.uds_x_min<30).sort((a,b)=>b.uds_x_min-a.uds_x_min).map(r=>`<tr>
+    <td>${r.Nombre}</td>
+    <td><span class="badge b-neu">${ML[r.Mes]} 2026</span></td>
+    <td class="r">${r.jornadas}</td>
+    <td class="r">${fmtK(r.unidades)}</td>
+    <td class="r">${Math.round(r.minutos).toLocaleString('es-CO')}</td>
+    <td class="r">${fmt(r.uds_hora,0)}</td>
+    <td class="r" style="color:${r.uds_x_min>=5.5?'#36c97a':'#f5a524'};">${fmt(r.uds_x_min,2)}</td>
+    <td><div class="pbar-wrap"><div class="pbar"><div class="pbar-fill" style="width:${Math.min(r.uds_x_min/12*100,100)}%;background:${r.uds_x_min>=5.5?'#36c97a':'#f5a524'};"></div></div></div></td>
+  </tr>`).join('');
+}
+
+renderResumen();
+</script>
+</body>
+</html>
