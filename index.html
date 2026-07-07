@@ -363,6 +363,13 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
 
 <!-- INDICADORES+ -->
 <div class="page" id="page-indicadores">
+  <div class="filter-row">
+    <label>Mes:</label>
+    <select id="i-mes-sel" onchange="renderIndicadores()">
+      <option value="todos">Todos</option>
+    </select>
+  </div>
+
   <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);">
     <div class="kpi c-blue" id="kpi-otif">
       <div class="kpi-lbl">OTIF</div>
@@ -393,21 +400,29 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
       <div style="position:relative;height:250px;"><canvas id="c-ind-otif" role="img" aria-label="OTIF por mes"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">Fill Rate por tipo</div>
-      <div class="card-sub">Unidades preparadas / pedidas · pedidos completados</div>
-      <div style="position:relative;height:250px;"><canvas id="c-ind-fillrate" role="img" aria-label="Fill Rate por tipo"></canvas></div>
+      <div class="card-title">OTIF por tipo</div>
+      <div class="card-sub">Período seleccionado · top 10 por volumen de pedidos</div>
+      <div style="position:relative;height:250px;"><canvas id="c-ind-otif-tipo" role="img" aria-label="OTIF por tipo"></canvas></div>
     </div>
   </div>
 
   <div class="row2">
     <div class="card">
+      <div class="card-title">Fill Rate por tipo</div>
+      <div class="card-sub">Unidades preparadas / pedidas · pedidos completados</div>
+      <div style="position:relative;height:250px;"><canvas id="c-ind-fillrate" role="img" aria-label="Fill Rate por tipo"></canvas></div>
+    </div>
+    <div class="card">
       <div class="card-title">Pedido perfecto por tipo</div>
       <div class="card-sub">% de pedidos con todas sus líneas 100% completas</div>
       <div style="position:relative;height:250px;"><canvas id="c-ind-perfecto" role="img" aria-label="Pedido perfecto por tipo"></canvas></div>
     </div>
+  </div>
+
+  <div class="row-full">
     <div class="card">
       <div class="card-title">Aging de vencimientos · Almacenamiento PT</div>
-      <div class="card-sub">Unidades por proximidad a la fecha de vencimiento</div>
+      <div class="card-sub">Unidades por proximidad a la fecha de vencimiento · no depende del filtro de mes (foto del inventario actual)</div>
       <div style="position:relative;height:250px;"><canvas id="c-ind-aging" role="img" aria-label="Aging de vencimientos PT"></canvas></div>
     </div>
   </div>
@@ -415,7 +430,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
   <div class="row-full">
     <div class="card">
       <div class="card-title">Top 10 productos con más unidades faltantes</div>
-      <div class="card-sub">Pedida − Preparada · pedidos completados (Empacado/Preparado)</div>
+      <div class="card-sub">Pedida − Preparada · pedidos completados (Empacado/Preparado) · período seleccionado</div>
       <table>
         <thead><tr><th>Código</th><th>Descripción</th><th class="r">Faltante (uds)</th></tr></thead>
         <tbody id="ind-faltantes-table"></tbody>
@@ -678,7 +693,7 @@ const INV      = {"inv_det": [{"Consecutivo": 13, "Nombre": "Inventario vestidos
 
 const PICK     = {"pick_mes": [{"Mes": "2026-04", "jornadas": 76, "pedidos": 2223, "unidades": 127694, "minutos": 27368.2, "uds_x_min": 4.67}, {"Mes": "2026-05", "jornadas": 76, "pedidos": 2671, "unidades": 142809, "minutos": 25517.39, "uds_x_min": 5.6}, {"Mes": "2026-06", "jornadas": 72, "pedidos": 3273, "unidades": 129201, "minutos": 20216.65, "uds_x_min": 6.39}, {"Mes": "2026-07", "jornadas": 20, "pedidos": 754, "unidades": 38885, "minutos": 3706.92, "uds_x_min": 10.49}], "pick_op_mes": [{"Mes": "2026-04", "Nombre": "Abelardo Botero", "jornadas": 5, "unidades": 929, "minutos": 134.86, "uds_hora": 413.3, "uds_x_min": 6.89}, {"Mes": "2026-04", "Nombre": "Alejandro Herrera Zapata", "jornadas": 20, "unidades": 33172, "minutos": 8115.94, "uds_hora": 245.2, "uds_x_min": 4.09}, {"Mes": "2026-04", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 128, "minutos": 117.35, "uds_hora": 65.4, "uds_x_min": 1.09}, {"Mes": "2026-04", "Nombre": "Esteban Montoya Cacante", "jornadas": 5, "unidades": 132, "minutos": 899.78, "uds_hora": 8.8, "uds_x_min": 0.15}, {"Mes": "2026-04", "Nombre": "Fabian Hernandez", "jornadas": 20, "unidades": 30691, "minutos": 8536.24, "uds_hora": 215.7, "uds_x_min": 3.6}, {"Mes": "2026-04", "Nombre": "Juan Pablo Sáenz", "jornadas": 2, "unidades": 1118, "minutos": 42.48, "uds_hora": 1579.1, "uds_x_min": 26.32}, {"Mes": "2026-04", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 51617, "minutos": 8410.42, "uds_hora": 368.2, "uds_x_min": 6.14}, {"Mes": "2026-04", "Nombre": "Santiago Ayala Cardenas", "jornadas": 5, "unidades": 9640, "minutos": 992.9, "uds_hora": 582.5, "uds_x_min": 9.71}, {"Mes": "2026-04", "Nombre": "Yojan Olvery Betancur Ospina", "jornadas": 1, "unidades": 267, "minutos": 118.23, "uds_hora": 135.5, "uds_x_min": 2.26}, {"Mes": "2026-05", "Nombre": "Abelardo Botero", "jornadas": 15, "unidades": 10609, "minutos": 2204.75, "uds_hora": 288.7, "uds_x_min": 4.81}, {"Mes": "2026-05", "Nombre": "Alejandro Herrera Zapata", "jornadas": 5, "unidades": 6152, "minutos": 1184.25, "uds_hora": 311.7, "uds_x_min": 5.19}, {"Mes": "2026-05", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 9, "minutos": 71.68, "uds_hora": 7.5, "uds_x_min": 0.13}, {"Mes": "2026-05", "Nombre": "Esteban Montoya Cacante", "jornadas": 5, "unidades": 73, "minutos": 391.35, "uds_hora": 11.2, "uds_x_min": 0.19}, {"Mes": "2026-05", "Nombre": "Fabian Hernandez", "jornadas": 18, "unidades": 46889, "minutos": 7777.85, "uds_hora": 361.7, "uds_x_min": 6.03}, {"Mes": "2026-05", "Nombre": "Johan Smith Carmona Hernandez", "jornadas": 12, "unidades": 26021, "minutos": 4746.4, "uds_hora": 328.9, "uds_x_min": 5.48}, {"Mes": "2026-05", "Nombre": "Juan Fernando Gallego", "jornadas": 2, "unidades": 13560, "minutos": 396.85, "uds_hora": 2050.1, "uds_x_min": 34.17}, {"Mes": "2026-05", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 38597, "minutos": 8607.88, "uds_hora": 269.0, "uds_x_min": 4.48}, {"Mes": "2026-05", "Nombre": "Santiago Ayala Cardenas", "jornadas": 1, "unidades": 899, "minutos": 136.38, "uds_hora": 395.5, "uds_x_min": 6.59}, {"Mes": "2026-06", "Nombre": "Abelardo Botero", "jornadas": 10, "unidades": 29739, "minutos": 681.51, "uds_hora": 2618.2, "uds_x_min": 43.64}, {"Mes": "2026-06", "Nombre": "Alejandro Herrera Zapata", "jornadas": 3, "unidades": 648, "minutos": 205.24, "uds_hora": 189.4, "uds_x_min": 3.16}, {"Mes": "2026-06", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 89, "minutos": 44.6, "uds_hora": 119.7, "uds_x_min": 2.0}, {"Mes": "2026-06", "Nombre": "Esteban Montoya Cacante", "jornadas": 4, "unidades": 14, "minutos": 210.63, "uds_hora": 4.0, "uds_x_min": 0.07}, {"Mes": "2026-06", "Nombre": "Fabian Hernandez", "jornadas": 17, "unidades": 19349, "minutos": 4227.08, "uds_hora": 274.6, "uds_x_min": 4.58}, {"Mes": "2026-06", "Nombre": "Johan Smith Carmona Hernandez", "jornadas": 15, "unidades": 28506, "minutos": 6009.26, "uds_hora": 284.6, "uds_x_min": 4.74}, {"Mes": "2026-06", "Nombre": "Juan Pablo Sáenz", "jornadas": 1, "unidades": 150, "minutos": 18.25, "uds_hora": 493.2, "uds_x_min": 8.22}, {"Mes": "2026-06", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 48151, "minutos": 8095.55, "uds_hora": 356.9, "uds_x_min": 5.95}, {"Mes": "2026-06", "Nombre": "Santiago Ayala Cardenas", "jornadas": 3, "unidades": 2554, "minutos": 724.53, "uds_hora": 211.5, "uds_x_min": 3.53}, {"Mes": "2026-06", "Nombre": "Santiago Montoya Montoya", "jornadas": 1, "unidades": 1, "minutos": 0.0, "uds_hora": 0, "uds_x_min": 0}, {"Mes": "2026-07", "Nombre": "Abelardo Botero", "jornadas": 3, "unidades": 547, "minutos": 83.06, "uds_hora": 395.1, "uds_x_min": 6.59}, {"Mes": "2026-07", "Nombre": "Alejandro Herrera Zapata", "jornadas": 2, "unidades": 2539, "minutos": 539.36, "uds_hora": 282.4, "uds_x_min": 4.71}, {"Mes": "2026-07", "Nombre": "Esteban Montoya Cacante", "jornadas": 2, "unidades": 11, "minutos": 72.7, "uds_hora": 9.1, "uds_x_min": 0.15}, {"Mes": "2026-07", "Nombre": "Fabian Hernandez", "jornadas": 4, "unidades": 7353, "minutos": 1444.29, "uds_hora": 305.5, "uds_x_min": 5.09}, {"Mes": "2026-07", "Nombre": "Juan Fernando Gallego", "jornadas": 3, "unidades": 15080, "minutos": 125.37, "uds_hora": 7217.0, "uds_x_min": 120.28}, {"Mes": "2026-07", "Nombre": "Samuel Jimenez Arenas", "jornadas": 4, "unidades": 12248, "minutos": 1381.17, "uds_hora": 532.1, "uds_x_min": 8.87}, {"Mes": "2026-07", "Nombre": "Santiago Ayala Cardenas", "jornadas": 1, "unidades": 1100, "minutos": 60.97, "uds_hora": 1082.5, "uds_x_min": 18.04}, {"Mes": "2026-07", "Nombre": "Santiago Montoya Montoya", "jornadas": 1, "unidades": 7, "minutos": 0.0, "uds_hora": 0, "uds_x_min": 0}]};
 
-const IND      = {"otif_mes": [{"Mes": "2026-04", "pedidos": 1860, "on_time": 776, "otif_pct": 41.7}, {"Mes": "2026-05", "pedidos": 2752, "on_time": 2144, "otif_pct": 77.9}, {"Mes": "2026-06", "pedidos": 2457, "on_time": 2083, "otif_pct": 84.8}, {"Mes": "2026-07", "pedidos": 368, "on_time": 368, "otif_pct": 100.0}], "otif_tipo": [{"Documento": "CPW", "pedidos": 5205, "on_time": 3670, "promesa_dias": 2, "otif_pct": 70.5}, {"Documento": "CPF", "pedidos": 630, "on_time": 482, "promesa_dias": 5, "otif_pct": 76.5}, {"Documento": "CPV", "pedidos": 421, "on_time": 240, "promesa_dias": 5, "otif_pct": 57.0}, {"Documento": "CRB", "pedidos": 341, "on_time": 283, "promesa_dias": 2, "otif_pct": 83.0}, {"Documento": "CPS", "pedidos": 233, "on_time": 140, "promesa_dias": 2, "otif_pct": 60.1}, {"Documento": "CRI", "pedidos": 229, "on_time": 222, "promesa_dias": 2, "otif_pct": 96.9}, {"Documento": "CPE", "pedidos": 137, "on_time": 135, "promesa_dias": 2, "otif_pct": 98.5}, {"Documento": "CPG", "pedidos": 95, "on_time": 74, "promesa_dias": 5, "otif_pct": 77.9}, {"Documento": "CRT", "pedidos": 85, "on_time": 72, "promesa_dias": 2, "otif_pct": 84.7}, {"Documento": "CPZ", "pedidos": 27, "on_time": 26, "promesa_dias": 2, "otif_pct": 96.3}, {"Documento": "CRK", "pedidos": 16, "on_time": 15, "promesa_dias": 2, "otif_pct": 93.8}, {"Documento": "CPL", "pedidos": 12, "on_time": 9, "promesa_dias": 5, "otif_pct": 75.0}], "otif_pct_global": 72.2, "fillrate_tipo": [{"Documento": "CPW", "pedida": 422, "preparada": 422, "fill_rate": 100.0, "pedidos": 219, "perfectos": 219, "pedido_perfecto_pct": 100.0}, {"Documento": "CPS", "pedida": 382, "preparada": 382, "fill_rate": 100.0, "pedidos": 38, "perfectos": 38, "pedido_perfecto_pct": 100.0}, {"Documento": "CPF", "pedida": 53, "preparada": 53, "fill_rate": 100.0, "pedidos": 34, "perfectos": 34, "pedido_perfecto_pct": 100.0}, {"Documento": "CRB", "pedida": 189, "preparada": 189, "fill_rate": 100.0, "pedidos": 17, "perfectos": 17, "pedido_perfecto_pct": 100.0}, {"Documento": "CPV", "pedida": 2169, "preparada": 2076, "fill_rate": 95.7, "pedidos": 5, "perfectos": 3, "pedido_perfecto_pct": 60.0}, {"Documento": "CPG", "pedida": 756, "preparada": 732, "fill_rate": 96.8, "pedidos": 2, "perfectos": 1, "pedido_perfecto_pct": 50.0}, {"Documento": "CPY", "pedida": 15131, "preparada": 15051, "fill_rate": 99.5, "pedidos": 1, "perfectos": 0, "pedido_perfecto_pct": 0.0}, {"Documento": "CPE", "pedida": 2, "preparada": 2, "fill_rate": 100.0, "pedidos": 1, "perfectos": 1, "pedido_perfecto_pct": 100.0}, {"Documento": "CRT", "pedida": 448, "preparada": 55, "fill_rate": 12.3, "pedidos": 1, "perfectos": 0, "pedido_perfecto_pct": 0.0}], "fill_rate_global": 97.0, "pedido_perfecto_pct_global": 98.4, "faltante_prod": [{"Producto": "R010102", "Descripcion": "SHAMPOO VARIEDAD ROMERO LA RECETA", "faltante": 125}, {"Producto": "D031003", "Descripcion": "BRONCEADOR DE ZANAHORIA Y CANELA DLUCHI", "faltante": 72}, {"Producto": "C031001", "Descripcion": "BRONCEADOR CHOCOLATE Y MIEL VIVIANA GR", "faltante": 56}, {"Producto": "C041201", "Descripcion": "LIP GLOSS ROSE VELVET VIVIANA GRONDON V1", "faltante": 56}, {"Producto": "C041202", "Descripcion": "LIP GLOSS ROSE VELVET VIVIANA GRONDON V2", "faltante": 56}, {"Producto": "C051501", "Descripcion": "COSMETIQUERA VIVIANA GRONDONA", "faltante": 56}, {"Producto": "C051601", "Descripcion": "ESTUCHE LIP GLOSS VIVIANA GRONDONA", "faltante": 56}, {"Producto": "C051602", "Descripcion": "CHARMS VIVIANA GRONDONA", "faltante": 56}, {"Producto": "ET0210SE", "Descripcion": "STICKER PR VIVIANA GRANDONA", "faltante": 56}, {"Producto": "C051603", "Descripcion": "MALETA VIAJERA VIVANA GRONDONA", "faltante": 1}], "aging": [{"bucket": "Vencido", "cantidad": 9113961}, {"bucket": "≤90d", "cantidad": 60527459}, {"bucket": "≤180d", "cantidad": 9036894}, {"bucket": "≤365d", "cantidad": 39515492}, {"bucket": ">365d", "cantidad": 9511799}], "pt_vence_6m_unidades": 69564353, "pt_total_unidades": 127705605};
+const IND      = {"otif_mes": [{"Mes": "2026-04", "pedidos": 1860, "on_time": 776, "otif_pct": 41.7}, {"Mes": "2026-05", "pedidos": 2752, "on_time": 2144, "otif_pct": 77.9}, {"Mes": "2026-06", "pedidos": 2457, "on_time": 2083, "otif_pct": 84.8}, {"Mes": "2026-07", "pedidos": 368, "on_time": 368, "otif_pct": 100.0}], "otif_tipo": [{"Documento": "CPW", "pedidos": 5205, "on_time": 3670, "promesa_dias": 2, "otif_pct": 70.5}, {"Documento": "CPF", "pedidos": 630, "on_time": 482, "promesa_dias": 5, "otif_pct": 76.5}, {"Documento": "CPV", "pedidos": 421, "on_time": 240, "promesa_dias": 5, "otif_pct": 57.0}, {"Documento": "CRB", "pedidos": 341, "on_time": 283, "promesa_dias": 2, "otif_pct": 83.0}, {"Documento": "CPS", "pedidos": 233, "on_time": 140, "promesa_dias": 2, "otif_pct": 60.1}, {"Documento": "CRI", "pedidos": 229, "on_time": 222, "promesa_dias": 2, "otif_pct": 96.9}, {"Documento": "CPE", "pedidos": 137, "on_time": 135, "promesa_dias": 2, "otif_pct": 98.5}, {"Documento": "CPG", "pedidos": 95, "on_time": 74, "promesa_dias": 5, "otif_pct": 77.9}, {"Documento": "CRT", "pedidos": 85, "on_time": 72, "promesa_dias": 2, "otif_pct": 84.7}, {"Documento": "CPZ", "pedidos": 27, "on_time": 26, "promesa_dias": 2, "otif_pct": 96.3}, {"Documento": "CRK", "pedidos": 16, "on_time": 15, "promesa_dias": 2, "otif_pct": 93.8}, {"Documento": "CPL", "pedidos": 12, "on_time": 9, "promesa_dias": 5, "otif_pct": 75.0}], "otif_mes_tipo": [{"Mes": "2026-04", "Documento": "CPW", "pedidos": 1099, "on_time": 294, "promesa_dias": 2, "otif_pct": 26.8}, {"Mes": "2026-04", "Documento": "CPF", "pedidos": 183, "on_time": 79, "promesa_dias": 5, "otif_pct": 43.2}, {"Mes": "2026-04", "Documento": "CPV", "pedidos": 175, "on_time": 89, "promesa_dias": 5, "otif_pct": 50.9}, {"Mes": "2026-04", "Documento": "CRB", "pedidos": 101, "on_time": 58, "promesa_dias": 2, "otif_pct": 57.4}, {"Mes": "2026-04", "Documento": "CPS", "pedidos": 94, "on_time": 55, "promesa_dias": 2, "otif_pct": 58.5}, {"Mes": "2026-04", "Documento": "CRI", "pedidos": 79, "on_time": 79, "promesa_dias": 2, "otif_pct": 100.0}, {"Mes": "2026-04", "Documento": "CPE", "pedidos": 50, "on_time": 50, "promesa_dias": 2, "otif_pct": 100.0}, {"Mes": "2026-04", "Documento": "CRT", "pedidos": 37, "on_time": 35, "promesa_dias": 2, "otif_pct": 94.6}, {"Mes": "2026-04", "Documento": "CPG", "pedidos": 35, "on_time": 31, "promesa_dias": 5, "otif_pct": 88.6}, {"Mes": "2026-04", "Documento": "CRK", "pedidos": 5, "on_time": 5, "promesa_dias": 2, "otif_pct": 100.0}, {"Mes": "2026-04", "Documento": "CPL", "pedidos": 2, "on_time": 1, "promesa_dias": 5, "otif_pct": 50.0}, {"Mes": "2026-05", "Documento": "CPW", "pedidos": 1962, "on_time": 1547, "promesa_dias": 2, "otif_pct": 78.8}, {"Mes": "2026-05", "Documento": "CPF", "pedidos": 242, "on_time": 203, "promesa_dias": 5, "otif_pct": 83.9}, {"Mes": "2026-05", "Documento": "CPV", "pedidos": 161, "on_time": 97, "promesa_dias": 5, "otif_pct": 60.2}, {"Mes": "2026-05", "Documento": "CRB", "pedidos": 134, "on_time": 125, "promesa_dias": 2, "otif_pct": 93.3}, {"Mes": "2026-05", "Documento": "CPS", "pedidos": 52, "on_time": 0, "promesa_dias": 2, "otif_pct": 0.0}, {"Mes": "2026-05", "Documento": "CPE", "pedidos": 51, "on_time": 49, "promesa_dias": 2, "otif_pct": 96.1}, {"Mes": "2026-05", "Documento": "CRT", "pedidos": 46, "on_time": 37, "promesa_dias": 2, "otif_pct": 80.4}, {"Mes": "2026-05", "Documento": "CPG", "pedidos": 38, "on_time": 25, "promesa_dias": 5, "otif_pct": 65.8}, {"Mes": "2026-05", "Documento": "CRI", "pedidos": 37, "on_time": 34, "promesa_dias": 2, "otif_pct": 91.9}, {"Mes": "2026-05", "Documento": "CRK", "pedidos": 11, "on_time": 10, "promesa_dias": 2, "otif_pct": 90.9}, {"Mes": "2026-05", "Documento": "CPZ", "pedidos": 9, "on_time": 9, "promesa_dias": 2, "otif_pct": 100.0}, {"Mes": "2026-05", "Documento": "CPL", "pedidos": 7, "on_time": 7, "promesa_dias": 5, "otif_pct": 100.0}, {"Mes": "2026-05", "Documento": "CPY", "pedidos": 2, "on_time": 1, "promesa_dias": 5, "otif_pct": 50.0}, {"Mes": "2026-06", "Documento": "CPW", "pedidos": 1878, "on_time": 1563, "promesa_dias": 2, "otif_pct": 83.2}, {"Mes": "2026-06", "Documento": "CPF", "pedidos": 177, "on_time": 172, "promesa_dias": 5, "otif_pct": 97.2}, {"Mes": "2026-06", "Documento": "CRI", "pedidos": 113, "on_time": 109, "promesa_dias": 2, "otif_pct": 96.5}, {"Mes": "2026-06", "Documento": "CRB", "pedidos": 86, "on_time": 80, "promesa_dias": 2, "otif_pct": 93.0}, {"Mes": "2026-06", "Documento": "CPV", "pedidos": 79, "on_time": 48, "promesa_dias": 5, "otif_pct": 60.8}, {"Mes": "2026-06", "Documento": "CPS", "pedidos": 51, "on_time": 49, "promesa_dias": 2, "otif_pct": 96.1}, {"Mes": "2026-06", "Documento": "CPE", "pedidos": 34, "on_time": 34, "promesa_dias": 2, "otif_pct": 100.0}, {"Mes": "2026-06", "Documento": "CPG", "pedidos": 19, "on_time": 15, "promesa_dias": 5, "otif_pct": 78.9}, {"Mes": "2026-06", "Documento": "CPZ", "pedidos": 12, "on_time": 11, "promesa_dias": 2, "otif_pct": 91.7}, {"Mes": "2026-06", "Documento": "CPL", "pedidos": 3, "on_time": 1, "promesa_dias": 5, "otif_pct": 33.3}, {"Mes": "2026-06", "Documento": "CPX", "pedidos": 2, "on_time": 1, "promesa_dias": 5, "otif_pct": 50.0}, {"Mes": "2026-06", "Documento": "CRT", "pedidos": 2, "on_time": 0, "promesa_dias": 2, "otif_pct": 0.0}, {"Mes": "2026-06", "Documento": "CPY", "pedidos": 1, "on_time": 0, "promesa_dias": 5, "otif_pct": 0.0}, {"Mes": "2026-07", "Documento": "CPW", "pedidos": 266, "on_time": 266, "promesa_dias": 2, "otif_pct": 100.0}, {"Mes": "2026-07", "Documento": "CPS", "pedidos": 36, "on_time": 36, "promesa_dias": 2, "otif_pct": 100.0}, {"Mes": "2026-07", "Documento": "CPF", "pedidos": 28, "on_time": 28, "promesa_dias": 5, "otif_pct": 100.0}, {"Mes": "2026-07", "Documento": "CRB", "pedidos": 20, "on_time": 20, "promesa_dias": 2, "otif_pct": 100.0}, {"Mes": "2026-07", "Documento": "CPV", "pedidos": 6, "on_time": 6, "promesa_dias": 5, "otif_pct": 100.0}, {"Mes": "2026-07", "Documento": "CPZ", "pedidos": 6, "on_time": 6, "promesa_dias": 2, "otif_pct": 100.0}, {"Mes": "2026-07", "Documento": "CPG", "pedidos": 3, "on_time": 3, "promesa_dias": 5, "otif_pct": 100.0}, {"Mes": "2026-07", "Documento": "CPE", "pedidos": 2, "on_time": 2, "promesa_dias": 2, "otif_pct": 100.0}, {"Mes": "2026-07", "Documento": "CPY", "pedidos": 1, "on_time": 1, "promesa_dias": 5, "otif_pct": 100.0}], "otif_pct_global": 72.2, "fillrate_tipo": [{"Documento": "CPW", "pedida": 422, "preparada": 422, "fill_rate": 100.0, "pedidos": 219, "perfectos": 219, "pedido_perfecto_pct": 100.0}, {"Documento": "CPS", "pedida": 382, "preparada": 382, "fill_rate": 100.0, "pedidos": 38, "perfectos": 38, "pedido_perfecto_pct": 100.0}, {"Documento": "CPF", "pedida": 53, "preparada": 53, "fill_rate": 100.0, "pedidos": 34, "perfectos": 34, "pedido_perfecto_pct": 100.0}, {"Documento": "CRB", "pedida": 189, "preparada": 189, "fill_rate": 100.0, "pedidos": 17, "perfectos": 17, "pedido_perfecto_pct": 100.0}, {"Documento": "CPV", "pedida": 2169, "preparada": 2076, "fill_rate": 95.7, "pedidos": 5, "perfectos": 3, "pedido_perfecto_pct": 60.0}, {"Documento": "CPG", "pedida": 756, "preparada": 732, "fill_rate": 96.8, "pedidos": 2, "perfectos": 1, "pedido_perfecto_pct": 50.0}, {"Documento": "CPY", "pedida": 15131, "preparada": 15051, "fill_rate": 99.5, "pedidos": 1, "perfectos": 0, "pedido_perfecto_pct": 0.0}, {"Documento": "CPE", "pedida": 2, "preparada": 2, "fill_rate": 100.0, "pedidos": 1, "perfectos": 1, "pedido_perfecto_pct": 100.0}, {"Documento": "CRT", "pedida": 448, "preparada": 55, "fill_rate": 12.3, "pedidos": 1, "perfectos": 0, "pedido_perfecto_pct": 0.0}], "fillrate_mes_tipo": [{"Mes": "2026-07", "Documento": "CPW", "pedida": 422, "preparada": 422, "fill_rate": 100.0, "pedidos": 219, "perfectos": 219, "pedido_perfecto_pct": 100.0}, {"Mes": "2026-07", "Documento": "CPS", "pedida": 382, "preparada": 382, "fill_rate": 100.0, "pedidos": 38, "perfectos": 38, "pedido_perfecto_pct": 100.0}, {"Mes": "2026-07", "Documento": "CPF", "pedida": 53, "preparada": 53, "fill_rate": 100.0, "pedidos": 34, "perfectos": 34, "pedido_perfecto_pct": 100.0}, {"Mes": "2026-07", "Documento": "CRB", "pedida": 189, "preparada": 189, "fill_rate": 100.0, "pedidos": 17, "perfectos": 17, "pedido_perfecto_pct": 100.0}, {"Mes": "2026-07", "Documento": "CPV", "pedida": 2169, "preparada": 2076, "fill_rate": 95.7, "pedidos": 5, "perfectos": 3, "pedido_perfecto_pct": 60.0}, {"Mes": "2026-07", "Documento": "CPG", "pedida": 756, "preparada": 732, "fill_rate": 96.8, "pedidos": 2, "perfectos": 1, "pedido_perfecto_pct": 50.0}, {"Mes": "2026-07", "Documento": "CPY", "pedida": 15131, "preparada": 15051, "fill_rate": 99.5, "pedidos": 1, "perfectos": 0, "pedido_perfecto_pct": 0.0}, {"Mes": "2026-07", "Documento": "CPE", "pedida": 2, "preparada": 2, "fill_rate": 100.0, "pedidos": 1, "perfectos": 1, "pedido_perfecto_pct": 100.0}, {"Mes": "2026-07", "Documento": "CRT", "pedida": 448, "preparada": 55, "fill_rate": 12.3, "pedidos": 1, "perfectos": 0, "pedido_perfecto_pct": 0.0}], "fill_rate_global": 97.0, "pedido_perfecto_pct_global": 98.4, "faltante_prod": [{"Producto": "R010102", "Descripcion": "SHAMPOO VARIEDAD ROMERO LA RECETA", "faltante": 125}, {"Producto": "D031003", "Descripcion": "BRONCEADOR DE ZANAHORIA Y CANELA DLUCHI", "faltante": 72}, {"Producto": "C031001", "Descripcion": "BRONCEADOR CHOCOLATE Y MIEL VIVIANA GR", "faltante": 56}, {"Producto": "C041201", "Descripcion": "LIP GLOSS ROSE VELVET VIVIANA GRONDON V1", "faltante": 56}, {"Producto": "C041202", "Descripcion": "LIP GLOSS ROSE VELVET VIVIANA GRONDON V2", "faltante": 56}, {"Producto": "C051501", "Descripcion": "COSMETIQUERA VIVIANA GRONDONA", "faltante": 56}, {"Producto": "C051601", "Descripcion": "ESTUCHE LIP GLOSS VIVIANA GRONDONA", "faltante": 56}, {"Producto": "C051602", "Descripcion": "CHARMS VIVIANA GRONDONA", "faltante": 56}, {"Producto": "ET0210SE", "Descripcion": "STICKER PR VIVIANA GRANDONA", "faltante": 56}, {"Producto": "C051603", "Descripcion": "MALETA VIAJERA VIVANA GRONDONA", "faltante": 1}], "faltante_prod_mes": [{"Mes": "2026-07", "Producto": "R010102", "Descripcion": "SHAMPOO VARIEDAD ROMERO LA RECETA", "faltante": 125}, {"Mes": "2026-07", "Producto": "D031003", "Descripcion": "BRONCEADOR DE ZANAHORIA Y CANELA DLUCHI", "faltante": 72}, {"Mes": "2026-07", "Producto": "C031001", "Descripcion": "BRONCEADOR CHOCOLATE Y MIEL VIVIANA GR", "faltante": 56}, {"Mes": "2026-07", "Producto": "C041201", "Descripcion": "LIP GLOSS ROSE VELVET VIVIANA GRONDON V1", "faltante": 56}, {"Mes": "2026-07", "Producto": "C041202", "Descripcion": "LIP GLOSS ROSE VELVET VIVIANA GRONDON V2", "faltante": 56}, {"Mes": "2026-07", "Producto": "C051501", "Descripcion": "COSMETIQUERA VIVIANA GRONDONA", "faltante": 56}, {"Mes": "2026-07", "Producto": "C051601", "Descripcion": "ESTUCHE LIP GLOSS VIVIANA GRONDONA", "faltante": 56}, {"Mes": "2026-07", "Producto": "C051602", "Descripcion": "CHARMS VIVIANA GRONDONA", "faltante": 56}, {"Mes": "2026-07", "Producto": "ET0210SE", "Descripcion": "STICKER PR VIVIANA GRANDONA", "faltante": 56}, {"Mes": "2026-07", "Producto": "C051603", "Descripcion": "MALETA VIAJERA VIVANA GRONDONA", "faltante": 1}], "aging": [{"bucket": "Vencido", "cantidad": 9113961}, {"bucket": "≤90d", "cantidad": 60527459}, {"bucket": "≤180d", "cantidad": 9036894}, {"bucket": "≤365d", "cantidad": 39515492}, {"bucket": ">365d", "cantidad": 9511799}], "pt_vence_6m_unidades": 69564353, "pt_total_unidades": 127705605};
 
 const TIPO_COL = ["#4a8fff","#36c97a","#f5a524","#9b7cf4","#f25757","#2dd4bf","#e879f9","#fb923c","#a3e635","#67e8f9","#fbbf24","#a78bfa","#34d399","#f87171"];
 const charts={};
@@ -1426,26 +1441,58 @@ function renderPickTable(mes){
 
 // ── INDICADORES+ ─────────────────────────────────────────
 function renderIndicadores(){
-  const otifMeses = IND.otif_mes || [];
+  const localMes = document.getElementById('i-mes-sel')?.value || 'todos';
+  const mes = GF.mes || localMes;
+
+  const otifMeses = IND.otif_mes || [];   // gráfica de tendencia: siempre todos los meses
   const otifLast  = otifMeses[otifMeses.length-1];
 
+  // ── OTIF (mes + tipo) ──────────────────────────────────────
+  let otifTipo, otifPctActual, otifSub;
+  if(mes !== 'todos'){
+    otifTipo = (IND.otif_mes_tipo||[]).filter(t=>t.Mes===mes);
+    const totPed = otifTipo.reduce((s,t)=>s+t.pedidos,0);
+    const totOn  = otifTipo.reduce((s,t)=>s+t.on_time,0);
+    otifPctActual = totPed ? +(totOn/totPed*100).toFixed(1) : 0;
+    const mRow = otifMeses.find(m=>m.Mes===mes);
+    otifSub = mRow ? `${ml(mRow.Mes)}: ${fmt(mRow.otif_pct,1)}% (${mRow.on_time}/${mRow.pedidos})` : '—';
+  } else {
+    otifTipo = IND.otif_tipo || [];
+    otifPctActual = IND.otif_pct_global;
+    otifSub = otifLast ? `${ml(otifLast.Mes)}: ${fmt(otifLast.otif_pct,1)}% (${otifLast.on_time}/${otifLast.pedidos})` : '—';
+  }
+
   // KPI 1 — OTIF
-  document.getElementById('kpi-otif-val').textContent = otifMeses.length ? fmt(IND.otif_pct_global,1)+'%' : '—';
-  document.getElementById('kpi-otif-val').style.color = otifMeses.length ? cc(IND.otif_pct_global) : 'inherit';
-  document.getElementById('kpi-otif-sub').textContent = otifLast
-    ? `${ml(otifLast.Mes)}: ${fmt(otifLast.otif_pct,1)}% (${otifLast.on_time}/${otifLast.pedidos})` : '—';
+  document.getElementById('kpi-otif-val').textContent = otifMeses.length ? fmt(otifPctActual,1)+'%' : '—';
+  document.getElementById('kpi-otif-val').style.color = otifMeses.length ? cc(otifPctActual) : 'inherit';
+  document.getElementById('kpi-otif-sub').textContent = otifSub;
+
+  // ── Fill Rate / Pedido Perfecto (por tipo, según mes) ───────
+  let frTipo, fillRateActual, perfectoActual;
+  if(mes !== 'todos'){
+    frTipo = (IND.fillrate_mes_tipo||[]).filter(t=>t.Mes===mes);
+    const totPedida = frTipo.reduce((s,t)=>s+t.pedida,0);
+    const totPrep   = frTipo.reduce((s,t)=>s+t.preparada,0);
+    fillRateActual  = totPedida ? +(totPrep/totPedida*100).toFixed(1) : 0;
+    const totPedidos   = frTipo.reduce((s,t)=>s+t.pedidos,0);
+    const totPerfectos = frTipo.reduce((s,t)=>s+t.perfectos,0);
+    perfectoActual = totPedidos ? +(totPerfectos/totPedidos*100).toFixed(1) : 0;
+  } else {
+    frTipo = IND.fillrate_tipo || [];
+    fillRateActual = IND.fill_rate_global;
+    perfectoActual = IND.pedido_perfecto_pct_global;
+  }
 
   // KPI 2 — Fill Rate
-  const frTipo = IND.fillrate_tipo || [];
-  document.getElementById('kpi-fillrate-val').textContent = frTipo.length ? fmt(IND.fill_rate_global,1)+'%' : '—';
-  document.getElementById('kpi-fillrate-val').style.color = frTipo.length ? cc(IND.fill_rate_global) : 'inherit';
+  document.getElementById('kpi-fillrate-val').textContent = frTipo.length ? fmt(fillRateActual,1)+'%' : '—';
+  document.getElementById('kpi-fillrate-val').style.color = frTipo.length ? cc(fillRateActual) : 'inherit';
   const topFill = [...frTipo].sort((a,b)=>b.pedidos-a.pedidos)[0];
   document.getElementById('kpi-fillrate-sub').textContent = topFill
     ? `${topFill.Documento}: ${fmt(topFill.fill_rate,1)}% (mayor volumen)` : '—';
 
   // KPI 3 — Pedido Perfecto
-  document.getElementById('kpi-perfecto-val').textContent = frTipo.length ? fmt(IND.pedido_perfecto_pct_global,1)+'%' : '—';
-  document.getElementById('kpi-perfecto-val').style.color = frTipo.length ? cc(IND.pedido_perfecto_pct_global) : 'inherit';
+  document.getElementById('kpi-perfecto-val').textContent = frTipo.length ? fmt(perfectoActual,1)+'%' : '—';
+  document.getElementById('kpi-perfecto-val').style.color = frTipo.length ? cc(perfectoActual) : 'inherit';
   document.getElementById('kpi-perfecto-sub').textContent = 'Todas las líneas del pedido 100% completas';
 
   // KPI 4 — PT vence <=6 meses
@@ -1469,6 +1516,17 @@ function renderIndicadores(){
       if(ctx.dataset.label!=='OTIF') return ' Meta: 95%';
       const m = otifMeses[ctx.dataIndex];
       return ` OTIF: ${fmt(m.otif_pct,1)}% (${m.on_time}/${m.pedidos} pedidos)`;
+    }}}}}
+  });
+
+  // Gráfico OTIF por tipo (top 10 por volumen de pedidos · respeta filtro de mes)
+  const otTipo = [...otifTipo].sort((a,b)=>b.pedidos-a.pedidos).slice(0,10);
+  mkChart('c-ind-otif-tipo',{
+    type:'bar',
+    data:{ labels: otTipo.map(t=>t.Documento), datasets:[{data:otTipo.map(t=>t.otif_pct), backgroundColor:otTipo.map(t=>cc(t.otif_pct)), borderRadius:4}] },
+    options:{...gOpts('%'), plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>{
+      const t = otTipo[ctx.dataIndex];
+      return ` ${t.Documento}: ${fmt(t.otif_pct,1)}%  (${t.on_time}/${t.pedidos} pedidos · promesa ${t.promesa_dias}d)`;
     }}}}}
   });
 
@@ -1512,8 +1570,11 @@ function renderIndicadores(){
     }
   });
 
-  // Tabla top faltantes
-  document.getElementById('ind-faltantes-table').innerHTML = (IND.faltante_prod||[]).map(p=>`<tr>
+  // Tabla top faltantes (top 10 · respeta filtro de mes)
+  const faltantes = mes !== 'todos'
+    ? (IND.faltante_prod_mes||[]).filter(p=>p.Mes===mes).sort((a,b)=>b.faltante-a.faltante).slice(0,10)
+    : (IND.faltante_prod||[]);
+  document.getElementById('ind-faltantes-table').innerHTML = faltantes.map(p=>`<tr>
     <td>${p.Producto}</td>
     <td>${p.Descripcion}</td>
     <td class="r" style="color:var(--red);font-weight:600;">${p.faltante.toLocaleString('es-CO')}</td>
@@ -1533,6 +1594,12 @@ function initFiltrosMes(){
     const o = document.createElement('option');
     o.value = m; o.textContent = mesCompleto(m);
     pSel.appendChild(o);
+  });
+  const iSel = document.getElementById('i-mes-sel');
+  MESES_CICLO.forEach(m=>{
+    const o = document.createElement('option');
+    o.value = m; o.textContent = mesCompleto(m);
+    iSel.appendChild(o);
   });
 }
 
