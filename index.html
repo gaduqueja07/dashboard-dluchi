@@ -572,6 +572,19 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
     </div>
   </div>
 
+  <div class="row2">
+    <div class="card">
+      <div class="card-title">Pedidos despachados por semana</div>
+      <div class="card-sub">Últimas 6 semanas · pedidos en Empacado · verde &gt; promedio, azul ≈ promedio, rojo &lt; promedio</div>
+      <div style="position:relative;height:230px;"><canvas id="c-opd-pedidos-semana" role="img" aria-label="Pedidos despachados por semana"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Unidades despachadas por semana</div>
+      <div class="card-sub">Últimas 6 semanas · Preparada en pedidos Empacado · verde &gt; promedio, azul ≈ promedio, rojo &lt; promedio</div>
+      <div style="position:relative;height:230px;"><canvas id="c-opd-unidades-semana" role="img" aria-label="Unidades despachadas por semana"></canvas></div>
+    </div>
+  </div>
+
   <div class="row-full">
     <div class="card">
       <div class="card-title">Tabla diaria por estado</div>
@@ -1012,6 +1025,32 @@ function cicloColor(v){return v<=2?'#36c97a':v<=5?'#f5a524':'#f25757';}
 function cicloSem(v){if(v<=2)return '<span class="badge b-green">≤2d</span>';if(v<=5)return '<span class="badge b-amber">≤5d</span>';return '<span class="badge b-red">>5d</span>';}
 
 function mkChart(id,cfg){if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),cfg);}
+
+// Plugin inline (sin dependencia externa) para dibujar el valor encima de
+// cada barra — usado por los gráficos "por semana" de Operación Diaria.
+// Se activa por dataset marcando dataset.showValueLabel=true en la config.
+const barValueLabelPlugin = {
+  id: 'barValueLabel',
+  afterDatasetsDraw(chart){
+    const {ctx} = chart;
+    chart.data.datasets.forEach((dataset, i)=>{
+      if(!dataset.showValueLabel) return;
+      const meta = chart.getDatasetMeta(i);
+      if(meta.hidden) return;
+      meta.data.forEach((bar, idx)=>{
+        const value = dataset.data[idx];
+        if(value === null || value === undefined) return;
+        ctx.save();
+        ctx.fillStyle = '#e8eaf0';
+        ctx.font = '600 11px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(value.toLocaleString('es-CO'), bar.x, bar.y - 6);
+        ctx.restore();
+      });
+    });
+  }
+};
 function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 const gOpts=(yl='')=>({responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11}}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#8b92a8',font:{size:11},callback:v=>v+(yl?yl:'')}}}});
 
@@ -2121,6 +2160,72 @@ function renderOperacionDiaria(){
       <td class="r" style="font-weight:600;">${total}</td>
     </tr>`;
   }).join('');
+
+  // ── Evolución semanal (pedidos / unidades despachadas) ──────
+  // "Despachado" = Estado Empacado. Siempre las últimas 6 semanas (mismo
+  // universo que el resto de la pestaña, DIAS_OPERACION_DIARIA=42=6*7),
+  // sin importar el filtro de semana (#opd-semana-sel) — solo respeta el
+  // filtro de tipo, igual que los demás gráficos de esta pestaña.
+  const semanas6 = [];
+  for(let i=5;i>=0;i--){
+    const d = new Date(lunesActual+'T00:00:00');
+    d.setDate(d.getDate() - 7*i);
+    semanas6.push(d.toISOString().slice(0,10));
+  }
+  const empacadosSemana = recientes.filter(r=>r.Estado==='Empacado');
+  const porSemana = {};
+  semanas6.forEach(s=>{ porSemana[s] = {pedidos:0, unidades:0}; });
+  empacadosSemana.forEach(r=>{
+    if(r.semana in porSemana){ porSemana[r.semana].pedidos += 1; porSemana[r.semana].unidades += r.unidades; }
+  });
+  const pedidosSemVals  = semanas6.map(s=>porSemana[s].pedidos);
+  const unidadesSemVals = semanas6.map(s=>porSemana[s].unidades);
+  const avgPedidosSem  = pedidosSemVals.reduce((a,b)=>a+b,0) / semanas6.length;
+  const avgUnidadesSem = unidadesSemVals.reduce((a,b)=>a+b,0) / semanas6.length;
+
+  // Banda de +/-5% alrededor del promedio = "en promedio" (azul); fuera de
+  // esa banda = por encima (verde) o por debajo (rojo). Con promedio=0 todas
+  // las barras quedan azules (no hay forma de estar "por encima/debajo" de 0).
+  const colorVsAvg = (val, avg) => {
+    if(!avg) return '#4a8fff';
+    const delta = (val - avg) / avg;
+    if(delta > 0.05) return '#36c97a';
+    if(delta < -0.05) return '#f25757';
+    return '#4a8fff';
+  };
+  const semanaLabel = s => `${diaCorto(s)}–${diaCorto(finDeSemana(s))}`;
+
+  mkChart('c-opd-pedidos-semana', {
+    type:'bar',
+    plugins:[barValueLabelPlugin],
+    data:{
+      labels: semanas6.map(diaCorto),
+      datasets:[
+        {data:pedidosSemVals, backgroundColor:pedidosSemVals.map(v=>colorVsAvg(v,avgPedidosSem)), borderRadius:4, showValueLabel:true, order:1},
+        {type:'line', label:'Promedio', data:semanas6.map(()=>avgPedidosSem), borderColor:'#f5a524', borderDash:[5,4], borderWidth:1.5, pointRadius:0, fill:false, order:0},
+      ]
+    },
+    options:{...gOpts(), layout:{padding:{top:18}}, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>{
+      if(ctx.dataset.label==='Promedio') return ` Promedio: ${fmt(avgPedidosSem,1)}`;
+      return ` ${semanaLabel(semanas6[ctx.dataIndex])}: ${ctx.raw.toLocaleString('es-CO')} pedidos`;
+    }}}}}
+  });
+
+  mkChart('c-opd-unidades-semana', {
+    type:'bar',
+    plugins:[barValueLabelPlugin],
+    data:{
+      labels: semanas6.map(diaCorto),
+      datasets:[
+        {data:unidadesSemVals, backgroundColor:unidadesSemVals.map(v=>colorVsAvg(v,avgUnidadesSem)), borderRadius:4, showValueLabel:true, order:1},
+        {type:'line', label:'Promedio', data:semanas6.map(()=>avgUnidadesSem), borderColor:'#f5a524', borderDash:[5,4], borderWidth:1.5, pointRadius:0, fill:false, order:0},
+      ]
+    },
+    options:{...gOpts(), layout:{padding:{top:18}}, plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>{
+      if(ctx.dataset.label==='Promedio') return ` Promedio: ${fmtK(avgUnidadesSem)}`;
+      return ` ${semanaLabel(semanas6[ctx.dataIndex])}: ${ctx.raw.toLocaleString('es-CO')} uds`;
+    }}}}}
+  });
 
   // ── Tabla de abandonados (respeta filtro de tipo) ───────────
   const abandonados = tipo ? (OPD.abandonados_top||[]).filter(a=>a.Documento===tipo) : (OPD.abandonados_top||[]);
