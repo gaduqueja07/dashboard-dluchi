@@ -368,17 +368,8 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
 
   <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);">
     <div class="kpi c-blue" id="kpi-otif">
-      <div class="kpi-lbl">OTIF</div>
-      <div class="kpi-dual">
-        <div>
-          <div class="kpi-val" id="kpi-otif-val">—</div>
-          <div class="kpi-dual-lbl">Calendario</div>
-        </div>
-        <div>
-          <div class="kpi-val" id="kpi-otif-habil-val">—</div>
-          <div class="kpi-dual-lbl">Días hábiles</div>
-        </div>
-      </div>
+      <div class="kpi-lbl">OTIF (días hábiles)</div>
+      <div class="kpi-val" id="kpi-otif-val">—</div>
       <div class="kpi-sub" id="kpi-otif-sub">—</div>
     </div>
     <div class="kpi c-blue" id="kpi-fillrate">
@@ -415,7 +406,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
   <div class="row3">
     <div class="card">
       <div class="card-title">OTIF por mes</div>
-      <div class="card-sub">Calendario vs días hábiles (excluye fines de semana/festivos colombianos) · meta 95%</div>
+      <div class="card-sub">Días hábiles (excluye fines de semana/festivos colombianos) · meta 95%</div>
       <div style="position:relative;height:230px;"><canvas id="c-ind-otif" role="img" aria-label="OTIF por mes"></canvas></div>
     </div>
     <div class="card">
@@ -433,7 +424,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
   <div class="row2">
     <div class="card">
       <div class="card-title">OTIF por tipo</div>
-      <div class="card-sub">Período seleccionado · top 10 por volumen de pedidos</div>
+      <div class="card-sub">Días hábiles · período seleccionado · top 10 por volumen de pedidos</div>
       <div style="position:relative;height:250px;"><canvas id="c-ind-otif-tipo" role="img" aria-label="OTIF por tipo"></canvas></div>
     </div>
     <div class="card">
@@ -496,11 +487,11 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
         <tbody>
           <tr>
             <td><strong>OTIF</strong></td>
-            <td>% de pedidos entregados dentro del plazo de promesa según su tipo de documento. Se calcula en dos versiones: <strong>calendario</strong> (días corridos) y <strong>hábil</strong> (excluye fin de semana y festivos colombianos completos — el CD opera 7 días/semana, así que no se descuenta horario nocturno, solo sábado/domingo/festivo como bloques completos de 24h).</td>
-            <td>on_time / pedidos × 100, donde on_time = 1 si dias (o dias_habiles) ≤ promesa(tipo)</td>
+            <td>% de pedidos entregados dentro del plazo de promesa según su tipo de documento, medido en <strong>días hábiles</strong> (excluye sábado, domingo y festivos colombianos completos — el CD opera 7 días/semana, así que no se descuenta horario nocturno, solo el bloque completo de 24h de fin de semana/festivo).</td>
+            <td>on_time / pedidos × 100, donde on_time = 1 si dias_habiles ≤ promesa(tipo)</td>
             <td>tiempos_ciclo.xlsx (Fecha Cargue, Fecha Fin, Documento, Consecutivo)</td>
             <td>Pedidos sin Fecha Fin (no completados) · despachos 100% SERV01 (cruce por Consecutivo)</td>
-            <td>95% · promesa: CPE/CPZ/CPW/CPS y CR* = 2 días, resto = 5 días (misma promesa para ambas versiones)</td>
+            <td>95% · promesa: CPE/CPZ/CPW/CPS y CR* = 2 días, resto = 5 días</td>
           </tr>
           <tr>
             <td><strong>Fill Rate</strong></td>
@@ -1691,41 +1682,33 @@ function renderIndicadores(){
   const localMes = document.getElementById('i-mes-sel')?.value || 'todos';
   const mes = GF.mes || localMes;
 
-  const otifMeses = IND.otif_mes || [];   // gráfica de tendencia: siempre todos los meses
+  // OTIF (2026-07-10): solo días hábiles se muestra en el dashboard — el
+  // cálculo calendario (IND.otif_mes/otif_tipo/otif_mes_tipo/otif_pct_global)
+  // sigue existiendo en agent.py pero ya no se renderiza en ningún lado, se
+  // dejó por si hace falta retomarlo. otifMeses/otifTipo/otifPctActual/otifSub
+  // abajo apuntan todos a los campos "_habil" para no tener que renombrar
+  // referencias downstream (gráfica "OTIF por tipo", tooltips, etc.).
+  const otifMeses = IND.otif_habil_mes || [];   // gráfica de tendencia: siempre todos los meses
   const otifLast  = otifMeses[otifMeses.length-1];
-  const otifHabilMeses = IND.otif_habil_mes || [];
 
   // ── OTIF (mes + tipo) ──────────────────────────────────────
   let otifTipo, otifPctActual, otifSub;
   if(mes !== 'todos'){
-    otifTipo = (IND.otif_mes_tipo||[]).filter(t=>t.Mes===mes);
+    otifTipo = (IND.otif_habil_mes_tipo||[]).filter(t=>t.Mes===mes);
     const totPed = otifTipo.reduce((s,t)=>s+t.pedidos,0);
     const totOn  = otifTipo.reduce((s,t)=>s+t.on_time,0);
     otifPctActual = totPed ? +(totOn/totPed*100).toFixed(1) : 0;
     const mRow = otifMeses.find(m=>m.Mes===mes);
     otifSub = mRow ? `${ml(mRow.Mes)}: ${fmt(mRow.otif_pct,1)}% (${mRow.on_time}/${mRow.pedidos})` : '—';
   } else {
-    otifTipo = IND.otif_tipo || [];
-    otifPctActual = IND.otif_pct_global;
+    otifTipo = IND.otif_habil_tipo || [];
+    otifPctActual = IND.otif_habil_pct_global;
     otifSub = otifLast ? `${ml(otifLast.Mes)}: ${fmt(otifLast.otif_pct,1)}% (${otifLast.on_time}/${otifLast.pedidos})` : '—';
   }
 
-  // ── OTIF en días hábiles (mismo patrón que el calendario) ───
-  let otifHabilPctActual;
-  if(mes !== 'todos'){
-    const otifHabilTipoMes = (IND.otif_habil_mes_tipo||[]).filter(t=>t.Mes===mes);
-    const totPedH = otifHabilTipoMes.reduce((s,t)=>s+t.pedidos,0);
-    const totOnH  = otifHabilTipoMes.reduce((s,t)=>s+t.on_time,0);
-    otifHabilPctActual = totPedH ? +(totOnH/totPedH*100).toFixed(1) : 0;
-  } else {
-    otifHabilPctActual = IND.otif_habil_pct_global;
-  }
-
-  // KPI 1 — OTIF (calendario + hábil)
+  // KPI 1 — OTIF (días hábiles)
   document.getElementById('kpi-otif-val').textContent = otifMeses.length ? fmt(otifPctActual,1)+'%' : '—';
   document.getElementById('kpi-otif-val').style.color = otifMeses.length ? cc(otifPctActual) : 'inherit';
-  document.getElementById('kpi-otif-habil-val').textContent = otifHabilMeses.length ? fmt(otifHabilPctActual,1)+'%' : '—';
-  document.getElementById('kpi-otif-habil-val').style.color = otifHabilMeses.length ? cc(otifHabilPctActual) : 'inherit';
   document.getElementById('kpi-otif-sub').textContent = otifSub;
 
   // ── Quiebres de stock (KPI = mes filtrado, o el último mes si "Todos") ──
@@ -1788,25 +1771,20 @@ function renderIndicadores(){
   document.getElementById('kpi-vence6m-sub').textContent = IND.pt_total_unidades
     ? `${fmt(pct6m,1)}% del stock PT (${fmtK(IND.pt_total_unidades)} uds)` : '—';
 
-  // Gráfico OTIF por mes — calendario vs días hábiles (2026-07-10)
+  // Gráfico OTIF por mes — solo días hábiles (2026-07-10)
   mkChart('c-ind-otif',{
     type:'line',
     data:{
       labels: otifMeses.map(m=>ml(m.Mes)),
       datasets:[
-        {label:'OTIF (calendario)', data: otifMeses.map(m=>m.otif_pct), borderColor:'#4a8fff', backgroundColor:'rgba(74,143,255,0.1)', fill:true, tension:.35, pointRadius:5, pointBackgroundColor:'#4a8fff', borderWidth:2},
-        {label:'OTIF (hábil)', data: otifHabilMeses.map(m=>m.otif_pct), borderColor:'#36c97a', backgroundColor:'rgba(54,201,122,0.1)', fill:true, tension:.35, pointRadius:5, pointBackgroundColor:'#36c97a', borderWidth:2},
+        {label:'OTIF',    data: otifMeses.map(m=>m.otif_pct), borderColor:'#4a8fff', backgroundColor:'rgba(74,143,255,0.1)', fill:true, tension:.35, pointRadius:5, pointBackgroundColor:'#4a8fff', borderWidth:2},
         {label:'Meta 95%', data: otifMeses.map(()=>95), borderColor:'#f5a524', borderDash:[5,4], borderWidth:1.5, pointRadius:0, fill:false},
       ]
     },
-    options:{...gOpts('%'), plugins:{legend:{display:true, labels:{color:'#8b92a8', boxWidth:10, font:{size:10.5}}}, tooltip:{callbacks:{label:ctx=>{
-      if(ctx.dataset.label==='Meta 95%') return ' Meta: 95%';
-      if(ctx.dataset.label==='OTIF (hábil)'){
-        const m = otifHabilMeses[ctx.dataIndex];
-        return m ? ` OTIF hábil: ${fmt(m.otif_pct,1)}% (${m.on_time}/${m.pedidos} pedidos)` : '';
-      }
+    options:{...gOpts('%'), plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>{
+      if(ctx.dataset.label!=='OTIF') return ' Meta: 95%';
       const m = otifMeses[ctx.dataIndex];
-      return ` OTIF calendario: ${fmt(m.otif_pct,1)}% (${m.on_time}/${m.pedidos} pedidos)`;
+      return ` OTIF: ${fmt(m.otif_pct,1)}% (${m.on_time}/${m.pedidos} pedidos)`;
     }}}}}
   });
 
