@@ -93,6 +93,36 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
 .slicer-clear:hover{opacity:0.8;}
 .filter-pill{display:inline-flex;align-items:center;gap:6px;background:var(--blue-d);border:1px solid rgba(74,143,255,0.3);border-radius:99px;padding:3px 12px;font-size:12px;color:var(--blue);}
 .filter-pill strong{font-weight:600;}
+/* DEFINICIONES */
+.def-section{margin-bottom:30px;}
+.def-section-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.def-section-sub{font-size:12px;color:var(--text2);margin-bottom:14px;}
+.def-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+.def-card{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--accent,var(--blue));border-radius:var(--r);padding:16px 18px;}
+.def-card-head{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+.def-card-icon{font-size:19px;line-height:1;}
+.def-card-title{font-size:13.5px;font-weight:700;color:var(--text);}
+.def-card-desc{font-size:12px;color:var(--text2);line-height:1.55;margin-bottom:12px;}
+.def-row{display:flex;gap:6px;font-size:11px;margin-bottom:5px;line-height:1.45;}
+.def-row-lbl{color:var(--text3);min-width:70px;flex-shrink:0;font-weight:600;text-transform:uppercase;letter-spacing:.03em;font-size:10px;padding-top:1px;}
+.def-row-val{color:var(--text2);}
+.def-meta{margin-top:11px;padding-top:11px;border-top:1px solid var(--border);font-size:12.5px;font-weight:700;color:var(--text);}
+.def-meta span{font-weight:400;color:var(--text2);font-size:11px;}
+.sec-servicio .def-card{--accent:var(--blue);}
+.sec-inventario .def-card{--accent:var(--purple);}
+.sec-productividad .def-card{--accent:var(--teal);}
+/* badges de canal (tabla Tipos de pedido) */
+.canal-web{background:rgba(74,143,255,.14);color:#4a8fff;}
+.canal-detal{background:rgba(45,212,191,.14);color:#2dd4bf;}
+.canal-mayorista{background:rgba(54,201,122,.14);color:#36c97a;}
+.canal-gs{background:rgba(245,165,36,.14);color:#f5a524;}
+.canal-marketplace{background:rgba(155,124,244,.14);color:#9b7cf4;}
+.canal-novaventa{background:rgba(251,146,60,.14);color:#fb923c;}
+.canal-export{background:rgba(242,87,87,.14);color:#f25757;}
+.canal-empleados{background:rgba(139,146,168,.16);color:#8b92a8;}
+.canal-interno{background:rgba(74,81,104,.3);color:#8b92a8;}
+.canal-produccion{background:rgba(245,165,36,.14);color:#f5a524;}
+.canal-bodega{background:rgba(139,146,168,.16);color:#8b92a8;}
 </style>
 </head>
 <body>
@@ -105,6 +135,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
     <button class="tab" onclick="showPage('picking',this)">Picking</button>
     <button class="tab" onclick="showPage('indicadores',this)">Indicadores+</button>
     <button class="tab" onclick="showPage('operacion',this)">Operación Diaria</button>
+    <button class="tab" onclick="showPage('definiciones',this)">Definiciones</button>
   </div>
   <div class="topbar-right">
     <div id="global-filter-indicator" style="display:none;" class="filter-pill">
@@ -477,83 +508,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
     </div>
   </div>
 
-  <div class="row-full">
-    <div class="card">
-      <div class="card-title">Definición de indicadores</div>
-      <div class="card-sub">Fórmula, fuente de datos, exclusiones y meta de cada indicador de esta pestaña. Metas marcadas (propuesta) no tienen todavía una línea de meta configurada en los gráficos.</div>
-      <div style="overflow-x:auto;">
-      <table style="min-width:920px;">
-        <thead><tr><th>Indicador</th><th>Definición</th><th>Fórmula</th><th>Fuente</th><th>Exclusiones</th><th>Meta</th></tr></thead>
-        <tbody>
-          <tr>
-            <td><strong>OTIF</strong></td>
-            <td>% de pedidos entregados dentro del plazo de promesa según su tipo de documento, medido en <strong>días hábiles</strong> (excluye sábado, domingo y festivos colombianos completos — el CD opera 7 días/semana, así que no se descuenta horario nocturno, solo el bloque completo de 24h de fin de semana/festivo).</td>
-            <td>on_time / pedidos × 100, donde on_time = 1 si dias_habiles ≤ promesa(tipo)</td>
-            <td>tiempos_ciclo.xlsx (Fecha Cargue, Fecha Fin, Documento, Consecutivo)</td>
-            <td>Pedidos sin Fecha Fin (no completados) · despachos 100% SERV01 (cruce por Consecutivo)</td>
-            <td>95% · promesa: CPE/CPZ/CPW/CPS y CR* = 2 días, resto = 5 días</td>
-          </tr>
-          <tr>
-            <td><strong>Fill Rate</strong></td>
-            <td>Proporción de unidades pedidas que efectivamente se prepararon.</td>
-            <td>SUM(Preparada) / SUM(Pedida) × 100</td>
-            <td>arqueo_pedido_v2.xlsx</td>
-            <td>Producto = SERV01 · Estado fuera de {Empacado, Preparado} (incluye Cancelado, Pendiente, Ruteado)</td>
-            <td>98%</td>
-          </tr>
-          <tr>
-            <td><strong>Pedido Perfecto</strong></td>
-            <td>% de pedidos donde todas las líneas no canceladas quedaron 100% completas (sin faltantes).</td>
-            <td>pedidos con Preparada ≥ Pedida en todas sus líneas / total pedidos × 100</td>
-            <td>arqueo_pedido_v2.xlsx (mismo universo que Fill Rate)</td>
-            <td>Producto = SERV01 · Estado fuera de {Empacado, Preparado}</td>
-            <td>95% (propuesta)</td>
-          </tr>
-          <tr>
-            <td><strong>Quiebre B</strong></td>
-            <td>% de pedidos con al menos una línea completamente sin atender.</td>
-            <td>pedidos con ≥1 línea (Ruteada=0 AND Preparada=0 AND Pedida&gt;0) / total pedidos × 100</td>
-            <td>arqueo_pedido_v2.xlsx (mismo universo que Fill Rate)</td>
-            <td>Producto = SERV01 · Estado fuera de {Empacado, Preparado}</td>
-            <td>2%</td>
-          </tr>
-          <tr>
-            <td><strong>Quiebre C</strong></td>
-            <td>% de unidades pedidas que quedaron completamente sin despachar.</td>
-            <td>SUM(Pedida en líneas en quiebre) / SUM(Pedida total) × 100</td>
-            <td>arqueo_pedido_v2.xlsx (mismo universo que Quiebre B)</td>
-            <td>Producto = SERV01 · Estado fuera de {Empacado, Preparado}</td>
-            <td>2% (propuesta, alineada a Quiebre B)</td>
-          </tr>
-          <tr>
-            <td><strong>Ciclo de pedido</strong></td>
-            <td>Días transcurridos entre la carga del pedido y el cierre del ciclo de despacho.</td>
-            <td>promedio / mediana / p75 de "Tiempo en Días" por mes</td>
-            <td>tiempos_ciclo.xlsx (Fecha Cargue, Tiempo en Días)</td>
-            <td>Pedidos sin "Tiempo en Días" (no completados) quedan fuera del cálculo</td>
-            <td>Según promesa por tipo (igual que OTIF): 2 días CPE/CPZ/CPW/CPS/CR*, 5 días el resto</td>
-          </tr>
-          <tr>
-            <td><strong>Productividad picking</strong></td>
-            <td>Unidades preparadas por minuto trabajado por el equipo de picking.</td>
-            <td>SUM(Unidades) / SUM(Tiempo Ejecución Minutos)</td>
-            <td>desempeno_picking.xlsx (Unidades, Tiempo Ejecución Minutos, Nombre, Inicio)</td>
-            <td>Ninguna</td>
-            <td>5.5 uds/min</td>
-          </tr>
-          <tr>
-            <td><strong>Confiabilidad inventario</strong></td>
-            <td>% de contenedores contados en ciclos de inventario donde el saldo físico coincidió exactamente con el sistema.</td>
-            <td>contenedores con Estado Conteo = "Igual" / total contenedores del conteo × 100</td>
-            <td>resultado_inventarios.xlsx (Estado Conteo, ConfiabilidadContenedor, Consecutivo, Fecha Inicio)</td>
-            <td>Ninguna — se incluyen todos los conteos cíclicos registrados</td>
-            <td>97% (propuesta, según umbral de color verde usado en el dashboard)</td>
-          </tr>
-        </tbody>
-      </table>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- OPERACIÓN DIARIA -->
@@ -638,6 +592,123 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
       </table>
     </div>
   </div>
+</div>
+
+<!-- DEFINICIONES -->
+<div class="page" id="page-definiciones">
+
+  <div class="def-section sec-servicio">
+    <div class="def-section-title">🚚 Indicadores de Servicio</div>
+    <div class="def-section-sub">Qué tan bien se le cumple al cliente: a tiempo, completo y sin errores.</div>
+    <div class="def-grid">
+      <div class="def-card">
+        <div class="def-card-head"><span class="def-card-icon">🕒</span><span class="def-card-title">OTIF</span></div>
+        <div class="def-card-desc">% de pedidos entregados dentro del plazo de promesa según su tipo de documento, medido en <strong>días hábiles</strong> (excluye sábado, domingo y festivos colombianos completos — el CD opera 7 días/semana, así que no se descuenta horario nocturno).</div>
+        <div class="def-row"><span class="def-row-lbl">Fórmula</span><span class="def-row-val">on_time / pedidos × 100, donde on_time = 1 si dias_habiles ≤ promesa(tipo)</span></div>
+        <div class="def-row"><span class="def-row-lbl">Fuente</span><span class="def-row-val">tiempos_ciclo.xlsx</span></div>
+        <div class="def-row"><span class="def-row-lbl">Excluye</span><span class="def-row-val">Pedidos sin Fecha Fin · despachos 100% SERV01</span></div>
+        <div class="def-meta">Meta 95% <span>· promesa 2d (CPE/CPZ/CPW/CPS/CR*) o 5d el resto</span></div>
+      </div>
+      <div class="def-card">
+        <div class="def-card-head"><span class="def-card-icon">📦</span><span class="def-card-title">Fill Rate</span></div>
+        <div class="def-card-desc">Proporción de unidades pedidas que efectivamente se prepararon.</div>
+        <div class="def-row"><span class="def-row-lbl">Fórmula</span><span class="def-row-val">SUM(Preparada) / SUM(Pedida) × 100</span></div>
+        <div class="def-row"><span class="def-row-lbl">Fuente</span><span class="def-row-val">arqueo_pedido_v2.xlsx</span></div>
+        <div class="def-row"><span class="def-row-lbl">Excluye</span><span class="def-row-val">Producto=SERV01 · Estado fuera de {Empacado, Preparado}</span></div>
+        <div class="def-meta">Meta 98%</div>
+      </div>
+      <div class="def-card">
+        <div class="def-card-head"><span class="def-card-icon">✅</span><span class="def-card-title">Pedido Perfecto</span></div>
+        <div class="def-card-desc">% de pedidos donde todas las líneas no canceladas quedaron 100% completas (sin faltantes).</div>
+        <div class="def-row"><span class="def-row-lbl">Fórmula</span><span class="def-row-val">pedidos con Preparada ≥ Pedida en todas sus líneas / total × 100</span></div>
+        <div class="def-row"><span class="def-row-lbl">Fuente</span><span class="def-row-val">arqueo_pedido_v2.xlsx (mismo universo que Fill Rate)</span></div>
+        <div class="def-row"><span class="def-row-lbl">Excluye</span><span class="def-row-val">Producto=SERV01 · Estado fuera de {Empacado, Preparado}</span></div>
+        <div class="def-meta">Meta 95% <span>(propuesta)</span></div>
+      </div>
+      <div class="def-card">
+        <div class="def-card-head"><span class="def-card-icon">⚠️</span><span class="def-card-title">Quiebre B</span></div>
+        <div class="def-card-desc">% de pedidos con al menos una línea completamente sin atender.</div>
+        <div class="def-row"><span class="def-row-lbl">Fórmula</span><span class="def-row-val">pedidos con ≥1 línea (Ruteada=0 AND Preparada=0 AND Pedida&gt;0) / total × 100</span></div>
+        <div class="def-row"><span class="def-row-lbl">Fuente</span><span class="def-row-val">arqueo_pedido_v2.xlsx (mismo universo que Fill Rate)</span></div>
+        <div class="def-row"><span class="def-row-lbl">Excluye</span><span class="def-row-val">Producto=SERV01 · Estado fuera de {Empacado, Preparado}</span></div>
+        <div class="def-meta">Meta 2%</div>
+      </div>
+      <div class="def-card">
+        <div class="def-card-head"><span class="def-card-icon">📉</span><span class="def-card-title">Quiebre C</span></div>
+        <div class="def-card-desc">% de unidades pedidas que quedaron completamente sin despachar.</div>
+        <div class="def-row"><span class="def-row-lbl">Fórmula</span><span class="def-row-val">SUM(Pedida en líneas en quiebre) / SUM(Pedida total) × 100</span></div>
+        <div class="def-row"><span class="def-row-lbl">Fuente</span><span class="def-row-val">arqueo_pedido_v2.xlsx (mismo universo que Quiebre B)</span></div>
+        <div class="def-row"><span class="def-row-lbl">Excluye</span><span class="def-row-val">Producto=SERV01 · Estado fuera de {Empacado, Preparado}</span></div>
+        <div class="def-meta">Meta 2% <span>(propuesta, alineada a Quiebre B)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="def-section sec-inventario">
+    <div class="def-section-title">📊 Indicadores de Inventario</div>
+    <div class="def-section-sub">Qué tan confiable es el saldo del sistema frente al físico.</div>
+    <div class="def-grid">
+      <div class="def-card">
+        <div class="def-card-head"><span class="def-card-icon">🔍</span><span class="def-card-title">Confiabilidad Inventario</span></div>
+        <div class="def-card-desc">% de contenedores contados en ciclos de inventario donde el saldo físico coincidió exactamente con el sistema.</div>
+        <div class="def-row"><span class="def-row-lbl">Fórmula</span><span class="def-row-val">contenedores con Estado Conteo="Igual" / total contenedores del conteo × 100</span></div>
+        <div class="def-row"><span class="def-row-lbl">Fuente</span><span class="def-row-val">resultado_inventarios.xlsx</span></div>
+        <div class="def-row"><span class="def-row-lbl">Excluye</span><span class="def-row-val">Ninguna — se incluyen todos los conteos cíclicos registrados</span></div>
+        <div class="def-meta">Meta 97% <span>(propuesta, según umbral de color verde del dashboard)</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="def-section sec-productividad">
+    <div class="def-section-title">⚡ Indicadores de Productividad</div>
+    <div class="def-section-sub">Qué tan rápido y eficiente es el flujo operativo del CD.</div>
+    <div class="def-grid">
+      <div class="def-card">
+        <div class="def-card-head"><span class="def-card-icon">⏱️</span><span class="def-card-title">Ciclo de pedido</span></div>
+        <div class="def-card-desc">Días transcurridos entre la carga del pedido y el cierre del ciclo de despacho.</div>
+        <div class="def-row"><span class="def-row-lbl">Fórmula</span><span class="def-row-val">promedio / mediana / p75 de días (Fecha Fin − Fecha Cargue) por mes</span></div>
+        <div class="def-row"><span class="def-row-lbl">Fuente</span><span class="def-row-val">tiempos_ciclo.xlsx</span></div>
+        <div class="def-row"><span class="def-row-lbl">Excluye</span><span class="def-row-val">Pedidos sin Fecha Fin (no completados)</span></div>
+        <div class="def-meta">Según promesa por tipo <span>(igual que OTIF): 2d CPE/CPZ/CPW/CPS/CR*, 5d el resto</span></div>
+      </div>
+      <div class="def-card">
+        <div class="def-card-head"><span class="def-card-icon">🏃</span><span class="def-card-title">Productividad Picking</span></div>
+        <div class="def-card-desc">Unidades preparadas por minuto trabajado por el equipo de picking.</div>
+        <div class="def-row"><span class="def-row-lbl">Fórmula</span><span class="def-row-val">SUM(Unidades) / SUM(Tiempo Ejecución Minutos)</span></div>
+        <div class="def-row"><span class="def-row-lbl">Fuente</span><span class="def-row-val">desempeno_picking.xlsx</span></div>
+        <div class="def-row"><span class="def-row-lbl">Excluye</span><span class="def-row-val">Ninguna</span></div>
+        <div class="def-meta">Meta 5.5 uds/min</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="def-section">
+    <div class="def-section-title">🏷️ Tipos de pedido</div>
+    <div class="def-section-sub">Catálogo de tipos de documento del WMS, su canal y la promesa de entrega aplicada en OTIF/Ciclo de pedido. No incluye tipos de movimiento interno sin pedidos reales en el histórico (ej. reabastecimientos).</div>
+    <div class="card">
+      <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Código</th><th>Nombre</th><th>Canal</th><th>Descripción</th><th class="r">Promesa</th></tr></thead>
+        <tbody><tr><td><strong>CPE</strong></td><td>Pedido de Venta Empleados</td><td><span class="badge canal-empleados">Empleados</span></td><td>Venta interna a empleados.</td><td class="r">2d</td></tr>
+          <tr><td><strong>CPF</strong></td><td>Pedido de Venta Detal</td><td><span class="badge canal-detal">Detal</span></td><td>Venta al detal (cliente final).</td><td class="r">5d</td></tr>
+          <tr><td><strong>CPG</strong></td><td>Pedido de Venta Mayorista Envío Gratis</td><td><span class="badge canal-mayorista">Mayorista</span></td><td>Venta mayorista con envío gratis.</td><td class="r">5d</td></tr>
+          <tr><td><strong>CPL</strong></td><td>Pedido de Venta Mayorista Recoge en CEDI</td><td><span class="badge canal-mayorista">Mayorista</span></td><td>Venta mayorista, el cliente recoge en el CEDI.</td><td class="r">5d</td></tr>
+          <tr><td><strong>CPS</strong></td><td>Pedido de Venta Grandes Superficies</td><td><span class="badge canal-gs">Grandes Superficies</span></td><td>Venta a cadenas / grandes superficies.</td><td class="r">2d</td></tr>
+          <tr><td><strong>CPV</strong></td><td>Pedido de Venta Mayorista</td><td><span class="badge canal-mayorista">Mayorista</span></td><td>Venta al por mayor.</td><td class="r">5d</td></tr>
+          <tr><td><strong>CPW</strong></td><td>Pedido de Venta Pág Web</td><td><span class="badge canal-web">Web</span></td><td>Pedidos de clientes a través de la página web.</td><td class="r">2d</td></tr>
+          <tr><td><strong>CPX</strong></td><td>Pedido de Venta Exportación</td><td><span class="badge canal-export">Exportación</span></td><td>Venta para exportación.</td><td class="r">5d</td></tr>
+          <tr><td><strong>CPY</strong></td><td>Pedido Novaventa</td><td><span class="badge canal-novaventa">Novaventa</span></td><td>Pedidos del canal Novaventa.</td><td class="r">5d</td></tr>
+          <tr><td><strong>CPZ</strong></td><td>Pedido Marketplace</td><td><span class="badge canal-marketplace">Marketplace</span></td><td>Pedidos originados en plataformas de marketplace.</td><td class="r">2d</td></tr>
+          <tr><td><strong>CRB</strong></td><td>Requisición Pedido Bodegas Externas</td><td><span class="badge canal-bodega">Bodega externa</span></td><td>Requisición hacia/desde bodegas externas.</td><td class="r">2d</td></tr>
+          <tr><td><strong>CRI</strong></td><td>Requisición Interna Influencer</td><td><span class="badge canal-interno">Interno</span></td><td>Requisición interna para envíos a influencers.</td><td class="r">2d</td></tr>
+          <tr><td><strong>CRK</strong></td><td>Requisición Interna Marketing</td><td><span class="badge canal-interno">Interno</span></td><td>Requisición interna para marketing.</td><td class="r">2d</td></tr>
+          <tr><td><strong>CRT</strong></td><td>Requisición Pedido Producción</td><td><span class="badge canal-produccion">Producción</span></td><td>Requisición para producción (armado de kits).</td><td class="r">2d</td></tr>
+          <tr><td><strong>CTT</strong></td><td>Transferencia Tránsito Pedido Producción</td><td><span class="badge canal-produccion">Producción</span></td><td>Transferencia en tránsito relacionada con producción.</td><td class="r">5d</td></tr></tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
