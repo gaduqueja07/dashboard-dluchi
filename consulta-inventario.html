@@ -21,6 +21,11 @@
     --muted:#6b7a8d;
     --agotado:#c0392b;
     --amber:#d98a1f;
+    /* Semáforo por % del ROP */
+    --st-ag:#a01b0d;     /* Agotado: cero (rojo profundo) */
+    --st-bajo:#e0402b;   /* Bajo: <=30% del ROP (rojo) */
+    --st-medio:#e0a400;  /* Medio: 31-65% del ROP (amarillo) */
+    --st-ok:#16A085;     /* Disponible: >65% del ROP (verde) */
     --shadow:0 1px 2px rgba(26,43,60,.06),0 8px 24px rgba(26,43,60,.06);
   }
   *{box-sizing:border-box}
@@ -65,6 +70,35 @@
   .chip .n{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1}
   .chip .l{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:5px;font-weight:600}
   .chip.teal .n{color:var(--teal-dark)}
+  /* Chips clicables tipo filtro-semáforo */
+  .chip.filter{cursor:pointer;font-family:inherit;text-align:left;border-width:1.5px;position:relative;transition:.15s;border-top:3px solid var(--line);min-width:96px}
+  .chip.filter:hover{border-color:var(--muted)}
+  .chip.filter.ok{border-top-color:var(--st-ok)}
+  .chip.filter.medio{border-top-color:var(--st-medio)}
+  .chip.filter.bajo{border-top-color:var(--st-bajo)}
+  .chip.filter.agotado{border-top-color:var(--st-ag)}
+  .chip.filter.ok .n{color:var(--st-ok)}
+  .chip.filter.medio .n{color:var(--st-medio)}
+  .chip.filter.bajo .n{color:var(--st-bajo)}
+  .chip.filter.agotado .n{color:var(--st-ag)}
+  .chip.filter.active{box-shadow:0 0 0 3px rgba(26,43,60,.10);border-color:var(--navy)}
+  .chip.filter.ok.active{box-shadow:0 0 0 3px rgba(22,160,133,.18);border-color:var(--st-ok)}
+  .chip.filter.medio.active{box-shadow:0 0 0 3px rgba(224,164,0,.22);border-color:var(--st-medio)}
+  .chip.filter.bajo.active{box-shadow:0 0 0 3px rgba(224,64,43,.18);border-color:var(--st-bajo)}
+  .chip.filter.agotado.active{box-shadow:0 0 0 3px rgba(160,27,13,.18);border-color:var(--st-ag)}
+  /* Leyenda del semáforo */
+  .legend{margin-top:11px;font-size:12.5px;color:var(--muted);line-height:1.7}
+  .legend .lg{font-weight:700;padding-left:16px;position:relative}
+  .legend .lg::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:9px;height:9px;border-radius:50%}
+  .legend .lg.ok{color:var(--st-ok)} .legend .lg.ok::before{background:var(--st-ok)}
+  .legend .lg.medio{color:#b58200} .legend .lg.medio::before{background:var(--st-medio)}
+  .legend .lg.bajo{color:var(--st-bajo)} .legend .lg.bajo::before{background:var(--st-bajo)}
+  .legend .lg.ag{color:var(--st-ag)} .legend .lg.ag::before{background:var(--st-ag)}
+  /* Punto de estado en cada fila */
+  .stdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:middle;flex-shrink:0}
+  .stdot.ok{background:var(--st-ok)} .stdot.medio{background:var(--st-medio)}
+  .stdot.bajo{background:var(--st-bajo)} .stdot.agotado{background:var(--st-ag)}
+  .ropx{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;letter-spacing:.02em}
 
   /* Controls */
   .controls{display:flex;align-items:center;gap:16px;margin:16px 0 8px;flex-wrap:wrap;font-size:13.5px}
@@ -93,11 +127,14 @@
   .cod{font-variant-numeric:tabular-nums;font-weight:600;color:var(--navy);white-space:nowrap}
   .nom{color:#2b3d4f;font-weight:500}
   .sal{text-align:right;font-variant-numeric:tabular-nums;font-weight:800;font-size:15.5px;color:var(--teal-dark);white-space:nowrap}
-  tr.zero .sal{color:var(--agotado)}
-  tr.low .sal{color:var(--amber)}
+  tr.st-ok .sal{color:var(--st-ok)}
+  tr.st-medio .sal{color:#b58200}
+  tr.st-bajo .sal{color:var(--st-bajo)}
+  tr.st-agotado .sal{color:var(--st-ag)}
   .tag{display:inline-block;margin-left:8px;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:20px;vertical-align:middle;letter-spacing:.03em}
-  .tag.ag{background:#fbeaea;color:var(--agotado)}
-  .tag.lo{background:#fdf2e2;color:var(--amber)}
+  .tag.agotado{background:#f7e3e1;color:var(--st-ag)}
+  .tag.bajo{background:#fbe6e2;color:var(--st-bajo)}
+  .tag.medio{background:#fbf1d6;color:#9c7000}
 
   .foot{padding:12px 16px;font-size:12.5px;color:var(--muted);text-align:center;background:#fafbfc;border-top:1px solid var(--line)}
 
@@ -116,7 +153,7 @@
   .mapper{background:#fff7e9;border:1px solid #f0d9a8;border-radius:12px;padding:16px;margin-top:12px}
   .mapper h4{margin:0 0 4px;font-size:14px;color:#8a6216}
   .mapper p{margin:0 0 12px;font-size:13px;color:#9a7a3a}
-  .mapper .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .mapper .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
   .mapper .fld label{display:block;font-size:11.5px;font-weight:700;color:#7a5c15;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
   .mapper select{width:100%;padding:9px 10px;border:1px solid #e6cf9f;border-radius:8px;background:#fff;font-size:13.5px;color:var(--navy)}
 
@@ -149,10 +186,13 @@
       <input id="q" type="search" placeholder="Buscar por nombre o código…" autocomplete="off" disabled />
     </div>
     <div class="chips" id="chips" style="display:none">
-      <div class="chip"><span class="n" id="c-ref">0</span><span class="l">Referencias</span></div>
-      <div class="chip teal"><span class="n" id="c-disp">0</span><span class="l">Con disponible</span></div>
-      <div class="chip"><span class="n" id="c-und">0</span><span class="l">Unidades totales</span></div>
+      <button class="chip filter active" data-f="todas"><span class="n" id="c-todas">0</span><span class="l">Todas</span></button>
+      <button class="chip filter agotado" data-f="agotado"><span class="n" id="c-ag">0</span><span class="l">Agotado</span></button>
+      <button class="chip filter bajo" data-f="bajo"><span class="n" id="c-bajo">0</span><span class="l">Bajo</span></button>
+      <button class="chip filter medio" data-f="medio"><span class="n" id="c-medio">0</span><span class="l">Medio</span></button>
+      <button class="chip filter ok" data-f="ok"><span class="n" id="c-ok">0</span><span class="l">Disponible</span></button>
     </div>
+    <div class="legend" id="legend" style="display:none"></div>
   </div>
 
   <!-- Loader state -->
@@ -172,12 +212,12 @@
       <div class="fld"><label>Código</label><select id="m-cod"></select></div>
       <div class="fld"><label>Nombre</label><select id="m-nom"></select></div>
       <div class="fld"><label>Saldo disponible</label><select id="m-sal"></select></div>
+      <div class="fld"><label>Punto de reorden (ROP) · opcional</label><select id="m-rop"></select></div>
     </div>
   </div>
 
   <div class="controls" id="controls" style="display:none">
     <label><input type="checkbox" id="agg" checked /> Sumar por referencia</label>
-    <label><input type="checkbox" id="onlyStock" /> Solo con disponible</label>
     <span class="spacer"></span>
     <button class="btn" id="reload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Otro archivo</button>
     <button class="btn" id="csv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M5 21h14"/></svg>Descargar</button>
@@ -211,12 +251,13 @@ let DATA_TS = null;   // fecha del dato (la pone el JSON si viene)
 const $ = s => document.querySelector(s);
 let ROWS = [];          // objetos por encabezado
 let HEADERS = [];
-let MAP = { cod:null, nom:null, sal:null };
+let MAP = { cod:null, nom:null, sal:null, rop:null };
 
 const CANDS = {
   cod:["codigo producto","cod producto","codigo","cod","referencia","ref","sku","item","articulo","codigo de barras"],
   nom:["nombre producto","descripcion producto","descripcion","nombre","producto","detalle","desc"],
-  sal:["saldo disponible","cantidad disponible","cant disponible","disponible","saldo","existencias","existencia","stock","unidades","cantidad","qty","cant"]
+  sal:["saldo disponible","cantidad disponible","cant disponible","disponible","saldo","existencias","existencia","stock","unidades","cantidad","qty","cant"],
+  rop:["rop","punto de reorden","punto reorden","pto reorden","reorden","punto de pedido","reorder point","minimo","min","stock minimo","limite"]
 };
 
 const norm = s => (s??"").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim().replace(/\s+/g," ");
@@ -250,8 +291,8 @@ function score(header,cands){
   return best;
 }
 function detect(headers){
-  const used=new Set(); const map={cod:null,nom:null,sal:null};
-  ["sal","cod","nom"].forEach(f=>{ // saldo primero: es el más importante
+  const used=new Set(); const map={cod:null,nom:null,sal:null,rop:null};
+  ["sal","cod","nom","rop"].forEach(f=>{ // saldo primero: es el más importante; rop es opcional
     let bestH=null,bestS=0;
     headers.forEach(h=>{ if(used.has(h))return; const s=score(h,CANDS[f]); if(s>bestS){bestS=s;bestH=h;} });
     if(bestH&&bestS>=20){ map[f]=bestH; used.add(bestH); }
@@ -293,20 +334,22 @@ function loadWorkbook(data){
 }
 
 function buildMapper(){
-  const opts=h=>['<option value="">— elegir —</option>'].concat(
+  const opts=(h,inclNone)=>[(inclNone?'<option value="">— ninguna —</option>':'<option value="">— elegir —</option>')].concat(
     HEADERS.map(x=>`<option value="${x.replace(/"/g,'&quot;')}" ${x===h?"selected":""}>${x}</option>`)).join("");
-  $("#m-cod").innerHTML=opts(MAP.cod); $("#m-nom").innerHTML=opts(MAP.nom); $("#m-sal").innerHTML=opts(MAP.sal);
+  $("#m-cod").innerHTML=opts(MAP.cod,false); $("#m-nom").innerHTML=opts(MAP.nom,false);
+  $("#m-sal").innerHTML=opts(MAP.sal,false); $("#m-rop").innerHTML=opts(MAP.rop,true);
 }
-["m-cod","m-nom","m-sal"].forEach((id,i)=>{
-  $("#"+id).addEventListener("change",e=>{ MAP[["cod","nom","sal"][i]]=e.target.value||null; render(); });
+["m-cod","m-nom","m-sal","m-rop"].forEach((id,i)=>{
+  $("#"+id).addEventListener("change",e=>{ MAP[["cod","nom","sal","rop"][i]]=e.target.value||null; render(); });
 });
 
 /* ---- Preparar filas visibles ---- */
 function prepared(){
   if(!MAP.cod||!MAP.nom||!MAP.sal) return [];
   const agg=$("#agg").checked;
+  const ropOf=r=> MAP.rop ? toNum(r[MAP.rop]) : 0;
   if(!agg){
-    return ROWS.map(r=>({cod:(r[MAP.cod]??"").toString().trim(),nom:(r[MAP.nom]??"").toString().trim(),sal:toNum(r[MAP.sal])}))
+    return ROWS.map(r=>({cod:(r[MAP.cod]??"").toString().trim(),nom:(r[MAP.nom]??"").toString().trim(),sal:toNum(r[MAP.sal]),rop:ropOf(r)}))
                .filter(r=>r.cod||r.nom);
   }
   const m=new Map();
@@ -314,63 +357,99 @@ function prepared(){
     const cod=(r[MAP.cod]??"").toString().trim();
     if(!cod) return;
     const nom=(r[MAP.nom]??"").toString().trim();
-    const sal=toNum(r[MAP.sal]);
-    if(!m.has(cod)) m.set(cod,{cod,nom,sal});
-    else { const o=m.get(cod); o.sal+=sal; if(!o.nom&&nom) o.nom=nom; }
+    const sal=toNum(r[MAP.sal]); const rop=ropOf(r);
+    if(!m.has(cod)) m.set(cod,{cod,nom,sal,rop});
+    else { const o=m.get(cod); o.sal+=sal; if(!o.nom&&nom) o.nom=nom; if(rop>o.rop) o.rop=rop; }
   });
   return [...m.values()];
 }
 
+/* ---- Semáforo: estado según % del saldo respecto al ROP ---- */
+function estadoDe(r){
+  if(r.sal<=0) return "agotado";                 // en cero
+  if(!(r.rop>0)) return "ok";                    // sin ROP no hay bandas => verde con saldo
+  const ratio=r.sal/r.rop;
+  if(ratio<=0.30) return "bajo";                 // hasta 30% del ROP
+  if(ratio<=0.65) return "medio";                // 31% a 65% del ROP
+  return "ok";                                   // por encima del 65%
+}
+function pctRop(r){ return r.rop>0 ? Math.round((r.sal/r.rop)*100) : null; }
+let filtro="todas";
+
 /* ---- Render ---- */
 function render(){
   const term=norm($("#q").value);
-  const onlyStock=$("#onlyStock").checked;
   let data=prepared();
+  data.forEach(r=>r.est=estadoDe(r));
 
-  // resumen (sobre todo el universo, no el filtro de texto)
-  const refTotal=data.length;
-  const dispTotal=data.filter(r=>r.sal>0).length;
-  const undTotal=data.reduce((a,r)=>a+r.sal,0);
-  $("#c-ref").textContent=fmt(refTotal);
-  $("#c-disp").textContent=fmt(dispTotal);
-  $("#c-und").textContent=fmt(undTotal);
+  // conteos del semáforo (sobre todo el universo, no el filtro de texto)
+  const cAll=data.length;
+  const cOk=data.filter(r=>r.est==="ok").length;
+  const cMedio=data.filter(r=>r.est==="medio").length;
+  const cBajo=data.filter(r=>r.est==="bajo").length;
+  const cAg=data.filter(r=>r.est==="agotado").length;
+  $("#c-todas").textContent=fmt(cAll);
+  $("#c-ok").textContent=fmt(cOk);
+  $("#c-medio").textContent=fmt(cMedio);
+  $("#c-bajo").textContent=fmt(cBajo);
+  $("#c-ag").textContent=fmt(cAg);
 
-  if(onlyStock) data=data.filter(r=>r.sal>0);
-  if(term) data=data.filter(r=>norm(r.cod).includes(term)||norm(r.nom).includes(term));
-  data.sort((a,b)=>a.nom.localeCompare(b.nom,"es"));
+  const hasRop=data.some(r=>r.rop>0);
+  $("#legend").innerHTML = hasRop
+    ? `Semáforo sobre el ROP: <b class="lg ok">Disponible</b> &gt;65% · <b class="lg medio">Medio</b> 31–65% · <b class="lg bajo">Bajo</b> ≤30% · <b class="lg ag">Agotado</b> en cero`
+    : `<b class="lg ok">Disponible</b> con existencias · <b class="lg ag">Agotado</b> en cero. Agrega la columna <b>ROP</b> para activar los niveles <b class="lg bajo">Bajo</b> y <b class="lg medio">Medio</b> por referencia.`;
+
+  // filtro por semáforo + texto
+  let view=data.slice();
+  if(filtro!=="todas") view=view.filter(r=>r.est===filtro);
+  if(term) view=view.filter(r=>norm(r.cod).includes(term)||norm(r.nom).includes(term));
+  view.sort((a,b)=>a.nom.localeCompare(b.nom,"es"));
 
   const tbody=$("#tbody"); tbody.innerHTML="";
-  const CAP=400; const shown=data.slice(0,CAP);
+  const CAP=400; const shown=view.slice(0,CAP);
 
-  if(!data.length){
-    tbody.innerHTML=`<tr><td colspan="3"><div class="empty">${term?`Sin resultados para <b>“${$("#q").value}”</b>`:"No hay referencias para mostrar."}</div></td></tr>`;
+  if(!view.length){
+    const msg = term ? `Sin resultados para <b>“${$("#q").value}”</b>`
+      : (filtro==="agotado"?"No hay referencias agotadas."
+        : filtro==="bajo"?"No hay referencias en nivel bajo."
+        : filtro==="medio"?"No hay referencias en nivel medio."
+        : filtro==="ok"?"No hay referencias disponibles."
+        : "No hay referencias para mostrar.");
+    tbody.innerHTML=`<tr><td colspan="3"><div class="empty">${msg}</div></td></tr>`;
     $("#foot").textContent="";
     return;
   }
+  const lbl={ok:"Disponible",medio:"Medio",bajo:"Bajo",agotado:"Agotado"};
   const frag=document.createDocumentFragment();
   shown.forEach(r=>{
     const tr=document.createElement("tr");
-    let tag="";
-    if(r.sal<=0){tr.className="zero";tag='<span class="tag ag">Agotado</span>';}
-    else if(r.sal<=5){tr.className="low";tag='<span class="tag lo">Bajo</span>';}
-    tr.innerHTML=`<td class="cod">${esc(r.cod)}</td><td class="nom">${esc(r.nom)||"<span style='color:#9aa8b8'>— sin nombre —</span>"}${tag}</td><td class="sal">${fmt(r.sal)}</td>`;
+    tr.className="st-"+r.est;
+    const tag = r.est==="ok" ? "" : `<span class="tag ${r.est}">${lbl[r.est]}</span>`;
+    const pct = pctRop(r);
+    const ropTip = r.rop>0 ? ` title="ROP ${fmt(r.rop)} · ${pct}% disponible"` : "";
+    const ropTxt = r.rop>0 ? `<span class="ropx">ROP ${fmt(r.rop)} · ${pct}%</span>` : "";
+    tr.innerHTML=`<td class="cod"><span class="stdot ${r.est}"${ropTip}></span>${esc(r.cod)}</td>`+
+      `<td class="nom">${esc(r.nom)||"<span style='color:#9aa8b8'>— sin nombre —</span>"}${tag}</td>`+
+      `<td class="sal">${fmt(r.sal)}${ropTxt}</td>`;
     frag.appendChild(tr);
   });
   tbody.appendChild(frag);
-  $("#foot").textContent = data.length>CAP
-    ? `Mostrando ${CAP} de ${fmt(data.length)} resultados · afina la búsqueda para ver menos`
-    : `${fmt(data.length)} ${data.length===1?"resultado":"resultados"}`;
+  const undView=view.reduce((a,r)=>a+r.sal,0);
+  $("#foot").textContent = (view.length>CAP ? `Mostrando ${CAP} de ${fmt(view.length)} · ` : `${fmt(view.length)} ${view.length===1?"referencia":"referencias"} · `)
+    + `${fmt(undView)} unidades`;
 }
 const esc=s=>(s??"").toString().replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 
 /* ---- Descargar CSV de la vista actual ---- */
 function downloadCSV(){
-  const term=norm($("#q").value); const onlyStock=$("#onlyStock").checked;
-  let data=prepared();
-  if(onlyStock) data=data.filter(r=>r.sal>0);
+  const term=norm($("#q").value);
+  let data=prepared(); data.forEach(r=>r.est=estadoDe(r));
+  if(filtro!=="todas") data=data.filter(r=>r.est===filtro);
   if(term) data=data.filter(r=>norm(r.cod).includes(term)||norm(r.nom).includes(term));
   data.sort((a,b)=>a.nom.localeCompare(b.nom,"es"));
-  const rows=[["Codigo","Nombre","Disponible"],...data.map(r=>[r.cod,r.nom,r.sal])];
+  const lbl={ok:"Disponible",medio:"Medio",bajo:"Bajo",agotado:"Agotado"};
+  const rows=[["Codigo","Nombre","Disponible","ROP","% del ROP","Estado"],
+    ...data.map(r=>[r.cod,r.nom,r.sal,r.rop||"",(r.rop>0?pctRop(r)+"%":""),lbl[r.est]])];
   const csv="\uFEFF"+rows.map(r=>r.map(c=>`"${(c??"").toString().replace(/"/g,'""')}"`).join(";")).join("\r\n");
   const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
   const a=document.createElement("a"); a.href=url; a.download="inventario_disponible.csv"; a.click(); URL.revokeObjectURL(url);
@@ -380,6 +459,7 @@ function downloadCSV(){
 function onReady(){
   $("#loader").style.display="none";
   $("#chips").style.display="flex";
+  $("#legend").style.display="block";
   $("#controls").style.display="flex";
   $("#results").style.display="block";
   $("#q").disabled=false; $("#q").focus();
@@ -404,12 +484,20 @@ ld.addEventListener("drop",e=>{ if(e.dataTransfer.files[0]) handleFile(e.dataTra
 
 $("#q").addEventListener("input",render);
 $("#agg").addEventListener("change",render);
-$("#onlyStock").addEventListener("change",render);
 $("#csv").addEventListener("click",downloadCSV);
+document.querySelectorAll(".chip.filter").forEach(ch=>{
+  ch.addEventListener("click",()=>{
+    const f=ch.dataset.f;
+    filtro=(filtro===f)?"todas":f;      // volver a tocar el mismo chip => quita el filtro
+    document.querySelectorAll(".chip.filter").forEach(c=>c.classList.toggle("active",c.dataset.f===filtro));
+    render();
+  });
+});
 $("#reload").addEventListener("click",()=>{
-  ROWS=[];HEADERS=[];MAP={cod:null,nom:null,sal:null};
+  ROWS=[];HEADERS=[];MAP={cod:null,nom:null,sal:null,rop:null};filtro="todas";
+  document.querySelectorAll(".chip.filter").forEach(c=>c.classList.toggle("active",c.dataset.f==="todas"));
   $("#q").value="";$("#q").disabled=true;
-  ["#chips","#controls","#results","#mapper"].forEach(s=>$(s).style.display="none");
+  ["#chips","#legend","#controls","#results","#mapper"].forEach(s=>$(s).style.display="none");
   $("#loader").style.display="block";$("#updated").textContent="";
 });
 
@@ -418,12 +506,13 @@ function loadJSON(j){
   const arr=Array.isArray(j)?j:(j.items||j.data||[]);
   DATA_TS=(!Array.isArray(j)&&(j.actualizado||j.updated))||null;
   const pick=(o,keys)=>{ for(const kk in o){ if(keys.includes(norm(kk))) return o[kk]; } return ""; };
-  HEADERS=["Codigo","Nombre","Disponible"];
-  MAP={cod:"Codigo",nom:"Nombre",sal:"Disponible"};
+  HEADERS=["Codigo","Nombre","Disponible","ROP"];
+  MAP={cod:"Codigo",nom:"Nombre",sal:"Disponible",rop:"ROP"};
   ROWS=arr.map(o=>({
     Codigo:(pick(o,["cod","codigo","referencia","ref","sku"])??"").toString().trim(),
     Nombre:(pick(o,["nom","nombre","descripcion","producto"])??"").toString().trim(),
-    Disponible:pick(o,["sal","disponible","saldo","cantidad","stock","existencia"])
+    Disponible:pick(o,["sal","disponible","saldo","cantidad","stock","existencia"]),
+    ROP:pick(o,["rop","reorden","punto de reorden","minimo","min"])
   })).filter(r=>r.Codigo||r.Nombre);
   $("#mapper").style.display="none";
   onReady();
