@@ -390,6 +390,7 @@ function onReady(){
 
 /* ---- Eventos de carga ---- */
 function handleFile(file){
+  DATA_TS=null;
   const reader=new FileReader();
   reader.onload=e=>{ try{ loadWorkbook(new Uint8Array(e.target.result)); }catch(err){ alert("No pude leer el archivo. Verifica que sea el export del WMS (.xlsx o .csv)."); console.error(err);} };
   reader.readAsArrayBuffer(file);
@@ -439,7 +440,11 @@ async function autoLoad(url){
     const res=await fetch(u,{cache:"no-store"});
     if(!res.ok) throw new Error("HTTP "+res.status);
     if(/\.json(\?|$)/i.test(url)) loadJSON(await res.json());
-    else loadWorkbook(new Uint8Array(await res.arrayBuffer()));
+    else{
+      const lm=res.headers.get("last-modified");   // hora real de publicación (7am / 12pm)
+      if(lm && !isNaN(new Date(lm))) DATA_TS=new Date(lm).toISOString();
+      loadWorkbook(new Uint8Array(await res.arrayBuffer()));
+    }
   }catch(err){
     console.error(err);
     h.textContent="No pude cargar el inventario del día";
