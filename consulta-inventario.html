@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Consulta de Inventario · D'Luchi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --navy:#1A2B3C;
+    --navy-2:#243b52;
+    --teal:#16A085;
+    --teal-dark:#0f7a66;
+    --bg:#f4f6f8;
+    --card:#ffffff;
+    --line:#e3e8ee;
+    --ink:#1A2B3C;
+    --muted:#6b7a8d;
+    --agotado:#c0392b;
+    --amber:#d98a1f;
+    --shadow:0 1px 2px rgba(26,43,60,.06),0 8px 24px rgba(26,43,60,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:var(--bg);color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    font-feature-settings:"tnum" 1,"cv05" 1;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:0 16px 64px}
+
+  /* Top bar */
+  header{
+    background:var(--navy);
+    background:linear-gradient(160deg,var(--navy) 0%,var(--navy-2) 100%);
+    color:#fff;position:sticky;top:0;z-index:20;
+    box-shadow:0 2px 12px rgba(26,43,60,.18);
+  }
+  .bar{max-width:960px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .brand{display:flex;align-items:baseline;gap:9px;font-weight:800;letter-spacing:-.02em;font-size:18px}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--teal);display:inline-block;transform:translateY(-1px)}
+  .brand small{font-weight:500;letter-spacing:.01em;color:#a9bccb;font-size:13px}
+  .updated{margin-left:auto;font-size:12px;color:#9fb3c4}
+  .updated b{color:#d7e2ec;font-weight:600}
+
+  /* Search hero */
+  .hero{padding:24px 0 8px}
+  .searchbox{position:relative}
+  .searchbox svg{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:22px;height:22px;stroke:var(--muted)}
+  #q{
+    width:100%;font-size:19px;font-weight:500;padding:18px 18px 18px 52px;
+    border:1.5px solid var(--line);border-radius:14px;background:var(--card);
+    box-shadow:var(--shadow);outline:none;transition:border-color .15s,box-shadow .15s;
+  }
+  #q::placeholder{color:#9aa8b8;font-weight:400}
+  #q:focus{border-color:var(--teal);box-shadow:0 0 0 4px rgba(22,160,133,.12)}
+
+  /* Summary chips */
+  .chips{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:10px 14px;display:flex;flex-direction:column;min-width:120px;flex:1}
+  .chip .n{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1}
+  .chip .l{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:5px;font-weight:600}
+  .chip.teal .n{color:var(--teal-dark)}
+
+  /* Controls */
+  .controls{display:flex;align-items:center;gap:16px;margin:16px 0 8px;flex-wrap:wrap;font-size:13.5px}
+  .controls label{display:flex;align-items:center;gap:7px;color:var(--muted);cursor:pointer;user-select:none;font-weight:500}
+  .controls input[type=checkbox]{width:16px;height:16px;accent-color:var(--teal);cursor:pointer}
+  .spacer{margin-left:auto}
+  .btn{
+    border:1px solid var(--line);background:var(--card);color:var(--navy);
+    padding:8px 13px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;transition:.15s;
+  }
+  .btn:hover{border-color:var(--teal);color:var(--teal-dark)}
+  .btn svg{width:15px;height:15px}
+
+  /* Results table */
+  .results{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);margin-top:4px}
+  table{width:100%;border-collapse:collapse}
+  thead th{
+    text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--muted);font-weight:700;padding:13px 16px;background:#fafbfc;border-bottom:1px solid var(--line);
+  }
+  thead th.num{text-align:right}
+  tbody td{padding:13px 16px;border-bottom:1px solid #eef2f6;font-size:14.5px;vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#f8fafb}
+  .cod{font-variant-numeric:tabular-nums;font-weight:600;color:var(--navy);white-space:nowrap}
+  .nom{color:#2b3d4f;font-weight:500}
+  .sal{text-align:right;font-variant-numeric:tabular-nums;font-weight:800;font-size:15.5px;color:var(--teal-dark);white-space:nowrap}
+  tr.zero .sal{color:var(--agotado)}
+  tr.low .sal{color:var(--amber)}
+  .tag{display:inline-block;margin-left:8px;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:20px;vertical-align:middle;letter-spacing:.03em}
+  .tag.ag{background:#fbeaea;color:var(--agotado)}
+  .tag.lo{background:#fdf2e2;color:var(--amber)}
+
+  .foot{padding:12px 16px;font-size:12.5px;color:var(--muted);text-align:center;background:#fafbfc;border-top:1px solid var(--line)}
+
+  /* States */
+  .state{background:var(--card);border:1.5px dashed var(--line);border-radius:14px;padding:40px 24px;text-align:center;margin-top:8px}
+  .state.drag{border-color:var(--teal);background:rgba(22,160,133,.04)}
+  .state h3{margin:0 0 6px;font-size:16px;color:var(--navy)}
+  .state p{margin:0 auto;color:var(--muted);font-size:14px;max-width:420px;line-height:1.5}
+  .state .file-btn{margin-top:18px;background:var(--teal);color:#fff;border:none;padding:12px 22px;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;transition:.15s}
+  .state .file-btn:hover{background:var(--teal-dark)}
+  .icon-big{width:44px;height:44px;stroke:var(--teal);margin:0 auto 12px;display:block}
+  .empty{padding:44px 24px;text-align:center;color:var(--muted)}
+  .empty b{color:var(--navy)}
+
+  /* Column mapping */
+  .mapper{background:#fff7e9;border:1px solid #f0d9a8;border-radius:12px;padding:16px;margin-top:12px}
+  .mapper h4{margin:0 0 4px;font-size:14px;color:#8a6216}
+  .mapper p{margin:0 0 12px;font-size:13px;color:#9a7a3a}
+  .mapper .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .mapper .fld label{display:block;font-size:11.5px;font-weight:700;color:#7a5c15;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+  .mapper select{width:100%;padding:9px 10px;border:1px solid #e6cf9f;border-radius:8px;background:#fff;font-size:13.5px;color:var(--navy)}
+
+  @media(max-width:640px){
+    .updated{width:100%;margin:4px 0 0}
+    thead{display:none}
+    tbody td{display:block;border:none;padding:2px 16px}
+    tbody tr{display:block;padding:14px 0;border-bottom:1px solid #eef2f6}
+    .cod{font-size:12.5px;color:var(--muted)}
+    .nom{font-size:15.5px;margin:2px 0}
+    .sal{text-align:left;font-size:20px;margin-top:4px}
+    .sal::before{content:"Disponible: ";font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+    .mapper .grid{grid-template-columns:1fr}
+    .chip{min-width:0}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand"><span class="dot"></span>D'Luchi<small>Consulta de inventario</small></div>
+    <div class="updated" id="updated"></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="searchbox">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="q" type="search" placeholder="Buscar por nombre o código…" autocomplete="off" disabled />
+    </div>
+    <div class="chips" id="chips" style="display:none">
+      <div class="chip"><span class="n" id="c-ref">0</span><span class="l">Referencias</span></div>
+      <div class="chip teal"><span class="n" id="c-disp">0</span><span class="l">Con disponible</span></div>
+      <div class="chip"><span class="n" id="c-und">0</span><span class="l">Unidades totales</span></div>
+    </div>
+  </div>
+
+  <!-- Loader state -->
+  <div class="state" id="loader">
+    <svg class="icon-big" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+    <h3>Carga el reporte de inventario del WMS</h3>
+    <p>Arrastra aquí el archivo que bajas de TecnoCedi (Excel o CSV) o selecciónalo. Se procesa en tu equipo; nada se sube a internet.</p>
+    <button class="file-btn" id="pick">Seleccionar archivo</button>
+    <input type="file" id="file" accept=".xlsx,.xls,.csv" hidden />
+  </div>
+
+  <!-- Column mapper (hidden unless needed) -->
+  <div class="mapper" id="mapper" style="display:none">
+    <h4>Confirma las columnas</h4>
+    <p>No pude identificar todas las columnas automáticamente. Indícame cuáles son:</p>
+    <div class="grid">
+      <div class="fld"><label>Código</label><select id="m-cod"></select></div>
+      <div class="fld"><label>Nombre</label><select id="m-nom"></select></div>
+      <div class="fld"><label>Saldo disponible</label><select id="m-sal"></select></div>
+    </div>
+  </div>
+
+  <div class="controls" id="controls" style="display:none">
+    <label><input type="checkbox" id="agg" checked /> Sumar por referencia</label>
+    <label><input type="checkbox" id="onlyStock" /> Solo con disponible</label>
+    <span class="spacer"></span>
+    <button class="btn" id="reload"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Otro archivo</button>
+    <button class="btn" id="csv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M5 21h14"/></svg>Descargar</button>
+  </div>
+
+  <div class="results" id="results" style="display:none">
+    <table>
+      <thead><tr><th style="width:22%">Código</th><th>Nombre</th><th class="num" style="width:22%">Disponible</th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="foot" id="foot"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG — auto-carga del inventario diario
+   Pon aquí el nombre del archivo que tu agente publica junto a
+   esta página (misma carpeta de GitHub Pages). Comercial solo
+   abre el link y se carga solo, sin subir nada.
+
+   Opción A (cero trabajo): el .xlsx/.csv tal cual lo baja el WMS
+      ej:  DATA_URL: "inventario.xlsx"
+   Opción B (más rápido): un JSON ya sumado por referencia
+      ej:  DATA_URL: "inventario.json"
+   Vacío ("") => carga manual arrastrando el archivo.
+============================================================ */
+const CONFIG = { DATA_URL: "inventario.xlsx" };
+let DATA_TS = null;   // fecha del dato (la pone el JSON si viene)
+
+const $ = s => document.querySelector(s);
+let ROWS = [];          // objetos por encabezado
+let HEADERS = [];
+let MAP = { cod:null, nom:null, sal:null };
+
+const CANDS = {
+  cod:["codigo producto","cod producto","codigo","cod","referencia","ref","sku","item","articulo","codigo de barras"],
+  nom:["nombre producto","descripcion producto","descripcion","nombre","producto","detalle","desc"],
+  sal:["saldo disponible","cantidad disponible","cant disponible","disponible","saldo","existencias","existencia","stock","unidades","cantidad","qty","cant"]
+};
+
+const norm = s => (s??"").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim().replace(/\s+/g," ");
+const fmt  = n => new Intl.NumberFormat("es-CO").format(n);
+
+function toNum(v){
+  if(typeof v==="number") return v;
+  let s=(v??"").toString().trim(); if(!s) return 0;
+  s=s.replace(/\s/g,"");
+  const dot=s.includes("."), com=s.includes(",");
+  if(dot&&com) s=s.replace(/\./g,"").replace(",",".");
+  else if(com) s=s.replace(",",".");
+  else if(dot){
+    const p=s.split(".");
+    if(p.length>2) s=s.replace(/\./g,"");           // varios puntos => miles
+    else if(p[1] && p[1].length===3) s=p[0]+p[1];   // ej "1.200" => 1200 (miles CO)
+  }
+  const n=parseFloat(s.replace(/[^0-9.\-]/g,""));
+  return isNaN(n)?0:n;
+}
+
+/* ---- Detección de columnas ---- */
+function score(header,cands){
+  const h=norm(header); let best=0;
+  cands.forEach((c,i)=>{
+    const w=cands.length-i; // prioridad por orden
+    if(h===c) best=Math.max(best,100+w);
+    else if(h.includes(c)) best=Math.max(best,50+w);
+    else if(c.includes(h)&&h.length>2) best=Math.max(best,20+w);
+  });
+  return best;
+}
+function detect(headers){
+  const used=new Set(); const map={cod:null,nom:null,sal:null};
+  ["sal","cod","nom"].forEach(f=>{ // saldo primero: es el más importante
+    let bestH=null,bestS=0;
+    headers.forEach(h=>{ if(used.has(h))return; const s=score(h,CANDS[f]); if(s>bestS){bestS=s;bestH=h;} });
+    if(bestH&&bestS>=20){ map[f]=bestH; used.add(bestH); }
+  });
+  return map;
+}
+
+/* ---- Encontrar fila de encabezados (los reportes traen bandas de título arriba) ---- */
+function findHeaderRow(matrix){
+  const wanted=[...CANDS.cod,...CANDS.nom,...CANDS.sal];
+  let best=0,bestScore=0;
+  for(let i=0;i<Math.min(matrix.length,25);i++){
+    const cells=(matrix[i]||[]).map(norm);
+    let s=0; cells.forEach(c=>{ if(c&&wanted.some(w=>c===w||c.includes(w))) s++; });
+    if(s>bestScore){bestScore=s;best=i;}
+  }
+  return bestScore>=2?best:0;
+}
+
+/* ---- Carga de archivo ---- */
+function loadWorkbook(data){
+  const wb=XLSX.read(data,{type:"array"});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const matrix=XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:""});
+  if(!matrix.length){ alert("El archivo está vacío."); return; }
+  const hr=findHeaderRow(matrix);
+  HEADERS=(matrix[hr]||[]).map(h=>(h??"").toString().trim()).filter(h=>h!=="");
+  ROWS=[];
+  for(let i=hr+1;i<matrix.length;i++){
+    const r=matrix[i]||[]; const obj={}; let any=false;
+    HEADERS.forEach((h,j)=>{ obj[h]=r[j]??""; if(obj[h]!=="") any=true; });
+    if(any) ROWS.push(obj);
+  }
+  MAP=detect(HEADERS);
+  buildMapper();
+  if(!MAP.cod||!MAP.nom||!MAP.sal){ $("#mapper").style.display="block"; }
+  else { $("#mapper").style.display="none"; }
+  onReady();
+}
+
+function buildMapper(){
+  const opts=h=>['<option value="">— elegir —</option>'].concat(
+    HEADERS.map(x=>`<option value="${x.replace(/"/g,'&quot;')}" ${x===h?"selected":""}>${x}</option>`)).join("");
+  $("#m-cod").innerHTML=opts(MAP.cod); $("#m-nom").innerHTML=opts(MAP.nom); $("#m-sal").innerHTML=opts(MAP.sal);
+}
+["m-cod","m-nom","m-sal"].forEach((id,i)=>{
+  $("#"+id).addEventListener("change",e=>{ MAP[["cod","nom","sal"][i]]=e.target.value||null; render(); });
+});
+
+/* ---- Preparar filas visibles ---- */
+function prepared(){
+  if(!MAP.cod||!MAP.nom||!MAP.sal) return [];
+  const agg=$("#agg").checked;
+  if(!agg){
+    return ROWS.map(r=>({cod:(r[MAP.cod]??"").toString().trim(),nom:(r[MAP.nom]??"").toString().trim(),sal:toNum(r[MAP.sal])}))
+               .filter(r=>r.cod||r.nom);
+  }
+  const m=new Map();
+  ROWS.forEach(r=>{
+    const cod=(r[MAP.cod]??"").toString().trim();
+    if(!cod) return;
+    const nom=(r[MAP.nom]??"").toString().trim();
+    const sal=toNum(r[MAP.sal]);
+    if(!m.has(cod)) m.set(cod,{cod,nom,sal});
+    else { const o=m.get(cod); o.sal+=sal; if(!o.nom&&nom) o.nom=nom; }
+  });
+  return [...m.values()];
+}
+
+/* ---- Render ---- */
+function render(){
+  const term=norm($("#q").value);
+  const onlyStock=$("#onlyStock").checked;
+  let data=prepared();
+
+  // resumen (sobre todo el universo, no el filtro de texto)
+  const refTotal=data.length;
+  const dispTotal=data.filter(r=>r.sal>0).length;
+  const undTotal=data.reduce((a,r)=>a+r.sal,0);
+  $("#c-ref").textContent=fmt(refTotal);
+  $("#c-disp").textContent=fmt(dispTotal);
+  $("#c-und").textContent=fmt(undTotal);
+
+  if(onlyStock) data=data.filter(r=>r.sal>0);
+  if(term) data=data.filter(r=>norm(r.cod).includes(term)||norm(r.nom).includes(term));
+  data.sort((a,b)=>a.nom.localeCompare(b.nom,"es"));
+
+  const tbody=$("#tbody"); tbody.innerHTML="";
+  const CAP=400; const shown=data.slice(0,CAP);
+
+  if(!data.length){
+    tbody.innerHTML=`<tr><td colspan="3"><div class="empty">${term?`Sin resultados para <b>“${$("#q").value}”</b>`:"No hay referencias para mostrar."}</div></td></tr>`;
+    $("#foot").textContent="";
+    return;
+  }
+  const frag=document.createDocumentFragment();
+  shown.forEach(r=>{
+    const tr=document.createElement("tr");
+    let tag="";
+    if(r.sal<=0){tr.className="zero";tag='<span class="tag ag">Agotado</span>';}
+    else if(r.sal<=5){tr.className="low";tag='<span class="tag lo">Bajo</span>';}
+    tr.innerHTML=`<td class="cod">${esc(r.cod)}</td><td class="nom">${esc(r.nom)||"<span style='color:#9aa8b8'>— sin nombre —</span>"}${tag}</td><td class="sal">${fmt(r.sal)}</td>`;
+    frag.appendChild(tr);
+  });
+  tbody.appendChild(frag);
+  $("#foot").textContent = data.length>CAP
+    ? `Mostrando ${CAP} de ${fmt(data.length)} resultados · afina la búsqueda para ver menos`
+    : `${fmt(data.length)} ${data.length===1?"resultado":"resultados"}`;
+}
+const esc=s=>(s??"").toString().replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+/* ---- Descargar CSV de la vista actual ---- */
+function downloadCSV(){
+  const term=norm($("#q").value); const onlyStock=$("#onlyStock").checked;
+  let data=prepared();
+  if(onlyStock) data=data.filter(r=>r.sal>0);
+  if(term) data=data.filter(r=>norm(r.cod).includes(term)||norm(r.nom).includes(term));
+  data.sort((a,b)=>a.nom.localeCompare(b.nom,"es"));
+  const rows=[["Codigo","Nombre","Disponible"],...data.map(r=>[r.cod,r.nom,r.sal])];
+  const csv="\uFEFF"+rows.map(r=>r.map(c=>`"${(c??"").toString().replace(/"/g,'""')}"`).join(";")).join("\r\n");
+  const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+  const a=document.createElement("a"); a.href=url; a.download="inventario_disponible.csv"; a.click(); URL.revokeObjectURL(url);
+}
+
+/* ---- Transición a estado listo ---- */
+function onReady(){
+  $("#loader").style.display="none";
+  $("#chips").style.display="flex";
+  $("#controls").style.display="flex";
+  $("#results").style.display="block";
+  $("#q").disabled=false; $("#q").focus();
+  const d=(DATA_TS && !isNaN(new Date(DATA_TS)))?new Date(DATA_TS):new Date();
+  $("#updated").innerHTML=`Actualizado <b>${d.toLocaleDateString("es-CO",{day:"2-digit",month:"short",year:"numeric"})} ${d.toLocaleTimeString("es-CO",{hour:"2-digit",minute:"2-digit"})}</b>`;
+  render();
+}
+
+/* ---- Eventos de carga ---- */
+function handleFile(file){
+  const reader=new FileReader();
+  reader.onload=e=>{ try{ loadWorkbook(new Uint8Array(e.target.result)); }catch(err){ alert("No pude leer el archivo. Verifica que sea el export del WMS (.xlsx o .csv)."); console.error(err);} };
+  reader.readAsArrayBuffer(file);
+}
+$("#pick").addEventListener("click",()=>$("#file").click());
+$("#file").addEventListener("change",e=>{ if(e.target.files[0]) handleFile(e.target.files[0]); });
+const ld=$("#loader");
+["dragenter","dragover"].forEach(ev=>ld.addEventListener(ev,e=>{e.preventDefault();ld.classList.add("drag");}));
+["dragleave","drop"].forEach(ev=>ld.addEventListener(ev,e=>{e.preventDefault();ld.classList.remove("drag");}));
+ld.addEventListener("drop",e=>{ if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
+
+$("#q").addEventListener("input",render);
+$("#agg").addEventListener("change",render);
+$("#onlyStock").addEventListener("change",render);
+$("#csv").addEventListener("click",downloadCSV);
+$("#reload").addEventListener("click",()=>{
+  ROWS=[];HEADERS=[];MAP={cod:null,nom:null,sal:null};
+  $("#q").value="";$("#q").disabled=true;
+  ["#chips","#controls","#results","#mapper"].forEach(s=>$(s).style.display="none");
+  $("#loader").style.display="block";$("#updated").textContent="";
+});
+
+/* ---- Cargar JSON ya armado por el agente ---- */
+function loadJSON(j){
+  const arr=Array.isArray(j)?j:(j.items||j.data||[]);
+  DATA_TS=(!Array.isArray(j)&&(j.actualizado||j.updated))||null;
+  const pick=(o,keys)=>{ for(const kk in o){ if(keys.includes(norm(kk))) return o[kk]; } return ""; };
+  HEADERS=["Codigo","Nombre","Disponible"];
+  MAP={cod:"Codigo",nom:"Nombre",sal:"Disponible"};
+  ROWS=arr.map(o=>({
+    Codigo:(pick(o,["cod","codigo","referencia","ref","sku"])??"").toString().trim(),
+    Nombre:(pick(o,["nom","nombre","descripcion","producto"])??"").toString().trim(),
+    Disponible:pick(o,["sal","disponible","saldo","cantidad","stock","existencia"])
+  })).filter(r=>r.Codigo||r.Nombre);
+  $("#mapper").style.display="none";
+  onReady();
+}
+
+/* ---- Auto-carga del inventario diario ---- */
+async function autoLoad(url){
+  const h=ld.querySelector("h3"), p=ld.querySelector("p");
+  h.textContent="Conectando con el inventario del día…";
+  p.textContent="Cargando la última descarga del WMS, un momento.";
+  $("#pick").style.display="none";
+  try{
+    const u=url+(url.includes("?")?"&":"?")+"t="+Date.now();  // evita caché de GitHub Pages
+    const res=await fetch(u,{cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    if(/\.json(\?|$)/i.test(url)) loadJSON(await res.json());
+    else loadWorkbook(new Uint8Array(await res.arrayBuffer()));
+  }catch(err){
+    console.error(err);
+    h.textContent="No pude cargar el inventario del día";
+    p.textContent="Revisa que el archivo esté publicado. Mientras tanto puedes cargarlo a mano.";
+    $("#pick").style.display="inline-block";
+  }
+}
+if(CONFIG.DATA_URL) autoLoad(CONFIG.DATA_URL);
+</script>
+</body>
+</html>
