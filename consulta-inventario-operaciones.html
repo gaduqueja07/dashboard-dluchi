@@ -101,6 +101,12 @@
   .ropx{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-top:2px;letter-spacing:.02em}
   .catx{display:inline-block;margin-top:3px;font-size:10.5px;font-weight:600;color:#5a6b7d;background:#eef2f6;
     padding:1px 8px;border-radius:20px;letter-spacing:.02em}
+  /* Desglose por ubicación */
+  .ubis{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .ubi{display:inline-flex;align-items:center;gap:6px;background:#f0f6f4;border:1px solid #d8e8e3;
+    border-radius:7px;padding:2px 4px 2px 9px;font-size:11px}
+  .ubi .uz{color:#4a6b62;font-weight:600}
+  .ubi .us{background:#16A085;color:#fff;font-weight:700;padding:1px 7px;border-radius:5px;font-variant-numeric:tabular-nums}
   /* Filtro de categoría con botones (tipo pestañas) */
   .catbar{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
   .catbtn{font-family:inherit;cursor:pointer;background:var(--card);border:1.5px solid var(--line);
@@ -227,6 +233,7 @@
       <div class="fld"><label>Saldo disponible</label><select id="m-sal"></select></div>
       <div class="fld"><label>Punto de reorden (ROP) · opcional</label><select id="m-rop"></select></div>
       <div class="fld"><label>Categoría · opcional</label><select id="m-cat"></select></div>
+      <div class="fld"><label>Tipo de ubicación · opcional</label><select id="m-ubi"></select></div>
     </div>
   </div>
 
@@ -265,7 +272,7 @@ let DATA_TS = null;   // fecha del dato (la pone el JSON si viene)
 const $ = s => document.querySelector(s);
 let ROWS = [];          // objetos por encabezado
 let HEADERS = [];
-let MAP = { cod:null, nom:null, sal:null, rop:null, cat:null };
+let MAP = { cod:null, nom:null, sal:null, rop:null, cat:null, ubi:null };
 let catFiltro = "todas";  // filtro de categoría
 
 const CANDS = {
@@ -273,7 +280,8 @@ const CANDS = {
   nom:["nombre producto","descripcion producto","descripcion","nombre","producto","detalle","desc"],
   sal:["saldo disponible","cantidad disponible","cant disponible","disponible","saldo","existencias","existencia","stock","unidades","cantidad","qty","cant"],
   rop:["rop","punto de reorden","punto reorden","pto reorden","reorden","punto de pedido","reorder point","minimo","min","stock minimo","limite"],
-  cat:["categoria","clase","tipo","familia","grupo","linea","clasificacion"]
+  cat:["categoria","clase","familia","grupo","clasificacion","linea"],
+  ubi:["tipo ubicacion","tipo de ubicacion","ubicacion","zona","bodega","almacen","tipo"]
 };
 
 const norm = s => (s??"").toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim().replace(/\s+/g," ");
@@ -307,8 +315,8 @@ function score(header,cands){
   return best;
 }
 function detect(headers){
-  const used=new Set(); const map={cod:null,nom:null,sal:null,rop:null,cat:null};
-  ["sal","cod","nom","rop","cat"].forEach(f=>{ // saldo primero; rop y cat opcionales
+  const used=new Set(); const map={cod:null,nom:null,sal:null,rop:null,cat:null,ubi:null};
+  ["sal","cod","nom","rop","ubi","cat"].forEach(f=>{ // ubi antes que cat para que "Tipo Ubicacion" no lo tome cat
     let bestH=null,bestS=0;
     headers.forEach(h=>{ if(used.has(h))return; const s=score(h,CANDS[f]); if(s>bestS){bestS=s;bestH=h;} });
     if(bestH&&bestS>=20){ map[f]=bestH; used.add(bestH); }
@@ -387,10 +395,10 @@ function buildMapper(){
     HEADERS.map(x=>`<option value="${x.replace(/"/g,'&quot;')}" ${x===h?"selected":""}>${x}</option>`)).join("");
   $("#m-cod").innerHTML=opts(MAP.cod,false); $("#m-nom").innerHTML=opts(MAP.nom,false);
   $("#m-sal").innerHTML=opts(MAP.sal,false); $("#m-rop").innerHTML=opts(MAP.rop,true);
-  $("#m-cat").innerHTML=opts(MAP.cat,true);
+  $("#m-cat").innerHTML=opts(MAP.cat,true); $("#m-ubi").innerHTML=opts(MAP.ubi,true);
 }
-["m-cod","m-nom","m-sal","m-rop","m-cat"].forEach((id,i)=>{
-  $("#"+id).addEventListener("change",e=>{ MAP[["cod","nom","sal","rop","cat"][i]]=e.target.value||null; fillCategorias(); render(); });
+["m-cod","m-nom","m-sal","m-rop","m-cat","m-ubi"].forEach((id,i)=>{
+  $("#"+id).addEventListener("change",e=>{ MAP[["cod","nom","sal","rop","cat","ubi"][i]]=e.target.value||null; fillCategorias(); render(); });
 });
 
 /* ---- Preparar filas visibles ---- */
@@ -399,20 +407,26 @@ function prepared(){
   const agg=$("#agg").checked;
   const ropOf=r=> MAP.rop ? toNum(r[MAP.rop]) : 0;
   const catOf=r=> MAP.cat ? (r[MAP.cat]??"").toString().trim() : "";
+  const ubiOf=r=> MAP.ubi ? (r[MAP.ubi]??"").toString().trim() : "";
   if(!agg){
-    return ROWS.map(r=>({cod:(r[MAP.cod]??"").toString().trim(),nom:(r[MAP.nom]??"").toString().trim(),sal:toNum(r[MAP.sal]),rop:ropOf(r),cat:catOf(r)}))
-               .filter(r=>r.cod||r.nom);
+    return ROWS.map(r=>{const u=ubiOf(r),s=toNum(r[MAP.sal]);
+      return {cod:(r[MAP.cod]??"").toString().trim(),nom:(r[MAP.nom]??"").toString().trim(),sal:s,rop:ropOf(r),cat:catOf(r),ubis:u?[{u,s}]:[]};})
+      .filter(r=>r.cod||r.nom);
   }
   const m=new Map();
   ROWS.forEach(r=>{
     const cod=(r[MAP.cod]??"").toString().trim();
     if(!cod) return;
     const nom=(r[MAP.nom]??"").toString().trim();
-    const sal=toNum(r[MAP.sal]); const rop=ropOf(r); const cat=catOf(r);
-    if(!m.has(cod)) m.set(cod,{cod,nom,sal,rop,cat});
+    const sal=toNum(r[MAP.sal]); const rop=ropOf(r); const cat=catOf(r); const ubi=ubiOf(r);
+    if(!m.has(cod)) m.set(cod,{cod,nom,sal,rop,cat,ubiMap:new Map()});
     else { const o=m.get(cod); o.sal+=sal; if(!o.nom&&nom) o.nom=nom; if(rop>o.rop) o.rop=rop; if(!o.cat&&cat) o.cat=cat; }
+    if(ubi){ const o=m.get(cod); o.ubiMap.set(ubi,(o.ubiMap.get(ubi)||0)+sal); }
   });
-  return [...m.values()];
+  return [...m.values()].map(o=>{
+    o.ubis=[...o.ubiMap.entries()].map(([u,s])=>({u,s})).sort((a,b)=>b.s-a.s); // mayor primero
+    delete o.ubiMap; return o;
+  });
 }
 
 /* ---- Semáforo: estado según % del saldo respecto al ROP ---- */
@@ -482,8 +496,10 @@ function render(){
     const ropTip = r.rop>0 ? ` title="ROP ${fmt(r.rop)} · ${pct}% disponible"` : "";
     const ropTxt = r.rop>0 ? `<span class="ropx">ROP ${fmt(r.rop)} · ${pct}%</span>` : "";
     const catTxt = (MAP.cat && r.cat) ? `<span class="catx">${esc(r.cat)}</span>` : "";
+    const ubiTxt = (r.ubis && r.ubis.length) ?
+      `<div class="ubis">${r.ubis.map(x=>`<span class="ubi"><span class="uz">${esc(x.u)}</span><span class="us">${fmt(x.s)}</span></span>`).join("")}</div>` : "";
     tr.innerHTML=`<td class="cod"><span class="stdot ${r.est}"${ropTip}></span>${esc(r.cod)}</td>`+
-      `<td class="nom">${esc(r.nom)||"<span style='color:#9aa8b8'>— sin nombre —</span>"}${tag}${catTxt}</td>`+
+      `<td class="nom">${esc(r.nom)||"<span style='color:#9aa8b8'>— sin nombre —</span>"}${tag}${catTxt}${ubiTxt}</td>`+
       `<td class="sal">${fmt(r.sal)}${ropTxt}</td>`;
     frag.appendChild(tr);
   });
@@ -505,8 +521,9 @@ function downloadCSV(){
   if(term) data=data.filter(r=>norm(r.cod).includes(term)||norm(r.nom).includes(term));
   data.sort((a,b)=>a.nom.localeCompare(b.nom,"es"));
   const lbl={ok:"Disponible",medio:"Medio",bajo:"Bajo",agotado:"Agotado"};
-  const rows=[["Codigo","Nombre","Categoria","Disponible","ROP","% del ROP","Estado"],
-    ...data.map(r=>[r.cod,r.nom,r.cat||"",r.sal,r.rop||"",(r.rop>0?pctRop(r)+"%":""),lbl[r.est]])];
+  const ubiStr=r=>(r.ubis||[]).map(x=>`${x.u}: ${x.s}`).join(" | ");
+  const rows=[["Codigo","Nombre","Categoria","Disponible","ROP","% del ROP","Estado","Ubicaciones"],
+    ...data.map(r=>[r.cod,r.nom,r.cat||"",r.sal,r.rop||"",(r.rop>0?pctRop(r)+"%":""),lbl[r.est],ubiStr(r)])];
   const csv="\uFEFF"+rows.map(r=>r.map(c=>`"${(c??"").toString().replace(/"/g,'""')}"`).join(";")).join("\r\n");
   const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
   const a=document.createElement("a"); a.href=url; a.download="inventario_operaciones.csv"; a.click(); URL.revokeObjectURL(url);
@@ -551,7 +568,7 @@ document.querySelectorAll(".chip.filter").forEach(ch=>{
   });
 });
 $("#reload").addEventListener("click",()=>{
-  ROWS=[];HEADERS=[];MAP={cod:null,nom:null,sal:null,rop:null,cat:null};filtro="todas";catFiltro="todas";
+  ROWS=[];HEADERS=[];MAP={cod:null,nom:null,sal:null,rop:null,cat:null,ubi:null};filtro="todas";catFiltro="todas";
   document.querySelectorAll(".chip.filter").forEach(c=>c.classList.toggle("active",c.dataset.f==="todas"));
   $("#q").value="";$("#q").disabled=true;
   ["#chips","#legend","#catbar","#controls","#results","#mapper"].forEach(s=>$(s).style.display="none");
@@ -563,16 +580,18 @@ function loadJSON(j){
   const arr=Array.isArray(j)?j:(j.items||j.data||[]);
   DATA_TS=(!Array.isArray(j)&&(j.actualizado||j.updated))||null;
   const pick=(o,keys)=>{ for(const kk in o){ if(keys.includes(norm(kk))) return o[kk]; } return ""; };
-  HEADERS=["Codigo","Nombre","Disponible","ROP","Categoria"];
-  MAP={cod:"Codigo",nom:"Nombre",sal:"Disponible",rop:"ROP",cat:"Categoria"};
+  HEADERS=["Codigo","Nombre","Disponible","ROP","Categoria","TipoUbicacion"];
+  MAP={cod:"Codigo",nom:"Nombre",sal:"Disponible",rop:"ROP",cat:"Categoria",ubi:"TipoUbicacion"};
   ROWS=arr.map(o=>({
     Codigo:(pick(o,["cod","codigo","referencia","ref","sku"])??"").toString().trim(),
     Nombre:(pick(o,["nom","nombre","descripcion","producto"])??"").toString().trim(),
     Disponible:pick(o,["sal","disponible","saldo","cantidad","stock","existencia"]),
     ROP:pick(o,["rop","reorden","punto de reorden","minimo","min"]),
-    Categoria:(pick(o,["cat","categoria","clase","tipo","familia","grupo"])??"").toString().trim()
+    Categoria:(pick(o,["cat","categoria","clase","familia","grupo"])??"").toString().trim(),
+    TipoUbicacion:(pick(o,["ubi","tipo ubicacion","tipo de ubicacion","ubicacion","zona","bodega"])??"").toString().trim()
   })).filter(r=>r.Codigo||r.Nombre);
   $("#mapper").style.display="none";
+  fillCategorias();
   onReady();
 }
 
