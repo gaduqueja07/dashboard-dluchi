@@ -69,6 +69,12 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
 .filter-row{display:flex;gap:10px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
 .filter-row label{font-size:12px;color:var(--text2);}
 .filter-row select{background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:var(--rs);padding:6px 10px;font-size:12px;outline:none;cursor:pointer;}
+.tipo-chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.tipo-chip{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);border-radius:99px;padding:4px 10px;font-size:11px;cursor:pointer;user-select:none;transition:all .12s;font-variant-numeric:tabular-nums;line-height:1.3;}
+.tipo-chip:hover{color:var(--text);}
+.tipo-chip.on{background:var(--blue-d);border-color:var(--blue);color:var(--blue);font-weight:600;}
+.tipo-chip.clear{border-style:dashed;}
+.tipo-status{font-size:11px;color:var(--blue);}
 /* mini stats */
 .mini-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
 .mini-stat{background:var(--bg3);border-radius:var(--rs);padding:12px 14px;}
@@ -395,6 +401,10 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
     <select id="i-mes-sel" onchange="renderIndicadores()">
       <option value="todos">Todos</option>
     </select>
+    <label style="margin-left:10px;">Tipo de pedido:</label>
+    <div class="tipo-chips" id="i-tipo-chips"></div>
+    <span class="tipo-chip clear" id="i-tipo-clear" onclick="clearTiposInd()" style="display:none;">✕ Limpiar</span>
+    <span class="tipo-status" id="i-tipo-status"></span>
   </div>
 
   <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr);">
@@ -455,7 +465,7 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
   <div class="row2">
     <div class="card">
       <div class="card-title">OTIF por tipo</div>
-      <div class="card-sub">Días hábiles · período seleccionado · top 10 por volumen de pedidos</div>
+      <div class="card-sub">Días hábiles · período seleccionado · top 10 por volumen (o solo los tipos filtrados)</div>
       <div style="position:relative;height:250px;"><canvas id="c-ind-otif-tipo" role="img" aria-label="OTIF por tipo"></canvas></div>
     </div>
     <div class="card">
@@ -728,6 +738,64 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
 // ── GLOBAL FILTER STATE ──────────────────────────────────────
 const GF = { tipo: null, mes: null };
 
+// Filtro de tipo de pedido LOCAL a la pestaña "Indicadores+" (multi-selección).
+// Vacío = todos los tipos. Combina con el filtro de mes (#i-mes-sel / GF.mes).
+const indTiposSel = new Set();
+
+function _indTiposDisponibles(){
+  const s = new Set();
+  (IND.otif_habil_tipo || []).forEach(t => s.add(t.Documento));
+  (IND.fillrate_tipo   || []).forEach(t => s.add(t.Documento));
+  (IND.quiebres_tipo   || []).forEach(t => s.add(t.Documento));
+  return [...s].filter(Boolean).sort();
+}
+
+function initTiposInd(){
+  const cont = document.getElementById('i-tipo-chips');
+  if(!cont) return;
+  cont.innerHTML = _indTiposDisponibles().map(t =>
+    `<span class="tipo-chip" data-tipo="${t}" onclick="toggleTipoInd('${t}')">${t}</span>`
+  ).join('');
+  _syncTipoChips();
+}
+
+function toggleTipoInd(t){
+  if(indTiposSel.has(t)) indTiposSel.delete(t); else indTiposSel.add(t);
+  _syncTipoChips();
+  renderIndicadores();
+}
+
+function clearTiposInd(){
+  indTiposSel.clear();
+  _syncTipoChips();
+  renderIndicadores();
+}
+
+function _syncTipoChips(){
+  document.querySelectorAll('#i-tipo-chips .tipo-chip').forEach(c =>
+    c.classList.toggle('on', indTiposSel.has(c.dataset.tipo)));
+  const clr = document.getElementById('i-tipo-clear');
+  if(clr) clr.style.display = indTiposSel.size ? 'inline-block' : 'none';
+  const st = document.getElementById('i-tipo-status');
+  if(st) st.textContent = indTiposSel.size
+    ? `Indicadores acotados a: ${[...indTiposSel].sort().join(', ')}`
+    : '';
+}
+
+// null = todos los tipos; si no, arreglo de tipos seleccionados.
+function indTiposActivos(){ return indTiposSel.size ? [...indTiposSel] : null; }
+
+// Suma un arreglo de filas "por tipo" (otif/fillrate/quiebres) a un solo objeto
+// de totales. Cada PedidoId pertenece a un único tipo de documento, así que
+// sumar los conteos por tipo no duplica pedidos.
+function _sumaTipos(rows){
+  const o = {pedidos:0, on_time:0, pedida:0, preparada:0, perfectos:0,
+             pedidos_afectados:0, pedida_total:0, pedida_quiebre:0,
+             lineas:0, lineas_quiebre:0};
+  (rows || []).forEach(r => { for(const k in o){ if(typeof r[k] === 'number') o[k] += r[k]; } });
+  return o;
+}
+
 function setGlobalTipo(t){
   GF.tipo = GF.tipo === t ? null : t;
   updateFilterIndicator();
@@ -975,7 +1043,7 @@ function switchStack(mode){ renderStack(mode); }
 
 const D        = {"mes_pond": [{"Mes": "2026-04", "pedidos": 1808, "promedio": 4.72, "mediana": 3.87, "p75": 8.01}, {"Mes": "2026-05", "pedidos": 2662, "promedio": 1.78, "mediana": 1.02, "p75": 2.2}, {"Mes": "2026-06", "pedidos": 2980, "promedio": 1.71, "mediana": 1.14, "p75": 2.18}, {"Mes": "2026-07", "pedidos": 3685, "promedio": 1.14, "mediana": 0.79, "p75": 1.25}, {"Mes": "2026-08", "pedidos": 2448, "promedio": 1.35, "mediana": 0.92, "p75": 2.08}], "ciclo_mes_tipo": [{"Mes": "2026-04", "Documento": "CPE", "pedidos": 50, "promedio": 0.19}, {"Mes": "2026-04", "Documento": "CPF", "pedidos": 183, "promedio": 5.53}, {"Mes": "2026-04", "Documento": "CPG", "pedidos": 30, "promedio": 1.64}, {"Mes": "2026-04", "Documento": "CPL", "pedidos": 2, "promedio": 3.44}, {"Mes": "2026-04", "Documento": "CPS", "pedidos": 94, "promedio": 2.21}, {"Mes": "2026-04", "Documento": "CPV", "pedidos": 138, "promedio": 4.86}, {"Mes": "2026-04", "Documento": "CPW", "pedidos": 1099, "promedio": 5.73}, {"Mes": "2026-04", "Documento": "CRB", "pedidos": 91, "promedio": 2.32}, {"Mes": "2026-04", "Documento": "CRI", "pedidos": 79, "promedio": 0.48}, {"Mes": "2026-04", "Documento": "CRK", "pedidos": 5, "promedio": 0.51}, {"Mes": "2026-04", "Documento": "CRT", "pedidos": 37, "promedio": 1.13}, {"Mes": "2026-05", "Documento": "CPE", "pedidos": 51, "promedio": 0.15}, {"Mes": "2026-05", "Documento": "CPF", "pedidos": 242, "promedio": 2.58}, {"Mes": "2026-05", "Documento": "CPG", "pedidos": 23, "promedio": 0.87}, {"Mes": "2026-05", "Documento": "CPL", "pedidos": 6, "promedio": 1.93}, {"Mes": "2026-05", "Documento": "CPS", "pedidos": 52, "promedio": 4.42}, {"Mes": "2026-05", "Documento": "CPV", "pedidos": 100, "promedio": 2.87}, {"Mes": "2026-05", "Documento": "CPW", "pedidos": 1963, "promedio": 1.72}, {"Mes": "2026-05", "Documento": "CPY", "pedidos": 2, "promedio": 5.38}, {"Mes": "2026-05", "Documento": "CPZ", "pedidos": 9, "promedio": 0.73}, {"Mes": "2026-05", "Documento": "CRB", "pedidos": 120, "promedio": 0.41}, {"Mes": "2026-05", "Documento": "CRI", "pedidos": 37, "promedio": 0.73}, {"Mes": "2026-05", "Documento": "CRK", "pedidos": 11, "promedio": 0.58}, {"Mes": "2026-05", "Documento": "CRT", "pedidos": 46, "promedio": 1.82}, {"Mes": "2026-06", "Documento": "CPE", "pedidos": 34, "promedio": 0.23}, {"Mes": "2026-06", "Documento": "CPF", "pedidos": 189, "promedio": 1.51}, {"Mes": "2026-06", "Documento": "CPG", "pedidos": 19, "promedio": 1.22}, {"Mes": "2026-06", "Documento": "CPL", "pedidos": 5, "promedio": 3.92}, {"Mes": "2026-06", "Documento": "CPS", "pedidos": 51, "promedio": 1.4}, {"Mes": "2026-06", "Documento": "CPV", "pedidos": 73, "promedio": 3.12}, {"Mes": "2026-06", "Documento": "CPW", "pedidos": 2376, "promedio": 1.73}, {"Mes": "2026-06", "Documento": "CPX", "pedidos": 5, "promedio": 7.78}, {"Mes": "2026-06", "Documento": "CPY", "pedidos": 2, "promedio": 4.01}, {"Mes": "2026-06", "Documento": "CPZ", "pedidos": 12, "promedio": 0.34}, {"Mes": "2026-06", "Documento": "CRB", "pedidos": 90, "promedio": 0.91}, {"Mes": "2026-06", "Documento": "CRI", "pedidos": 122, "promedio": 1.71}, {"Mes": "2026-06", "Documento": "CRT", "pedidos": 2, "promedio": 8.96}, {"Mes": "2026-07", "Documento": "CPE", "pedidos": 43, "promedio": 0.22}, {"Mes": "2026-07", "Documento": "CPF", "pedidos": 267, "promedio": 1.01}, {"Mes": "2026-07", "Documento": "CPG", "pedidos": 29, "promedio": 0.72}, {"Mes": "2026-07", "Documento": "CPH", "pedidos": 3, "promedio": 0.83}, {"Mes": "2026-07", "Documento": "CPK", "pedidos": 1, "promedio": 0.09}, {"Mes": "2026-07", "Documento": "CPL", "pedidos": 7, "promedio": 1.7}, {"Mes": "2026-07", "Documento": "CPQ", "pedidos": 13, "promedio": 1.52}, {"Mes": "2026-07", "Documento": "CPS", "pedidos": 105, "promedio": 0.53}, {"Mes": "2026-07", "Documento": "CPV", "pedidos": 77, "promedio": 0.97}, {"Mes": "2026-07", "Documento": "CPW", "pedidos": 2770, "promedio": 1.23}, {"Mes": "2026-07", "Documento": "CPX", "pedidos": 8, "promedio": 2.54}, {"Mes": "2026-07", "Documento": "CPY", "pedidos": 4, "promedio": 1.12}, {"Mes": "2026-07", "Documento": "CPZ", "pedidos": 42, "promedio": 0.26}, {"Mes": "2026-07", "Documento": "CRB", "pedidos": 76, "promedio": 1.03}, {"Mes": "2026-07", "Documento": "CRI", "pedidos": 240, "promedio": 0.91}, {"Mes": "2026-08", "Documento": "CPE", "pedidos": 33, "promedio": 0.24}, {"Mes": "2026-08", "Documento": "CPF", "pedidos": 132, "promedio": 1.0}, {"Mes": "2026-08", "Documento": "CPG", "pedidos": 27, "promedio": 0.55}, {"Mes": "2026-08", "Documento": "CPH", "pedidos": 1, "promedio": 0.27}, {"Mes": "2026-08", "Documento": "CPJ", "pedidos": 3, "promedio": 3.42}, {"Mes": "2026-08", "Documento": "CPK", "pedidos": 1, "promedio": 0.88}, {"Mes": "2026-08", "Documento": "CPL", "pedidos": 8, "promedio": 1.93}, {"Mes": "2026-08", "Documento": "CPQ", "pedidos": 16, "promedio": 1.63}, {"Mes": "2026-08", "Documento": "CPS", "pedidos": 68, "promedio": 1.59}, {"Mes": "2026-08", "Documento": "CPV", "pedidos": 49, "promedio": 1.35}, {"Mes": "2026-08", "Documento": "CPW", "pedidos": 1954, "promedio": 1.41}, {"Mes": "2026-08", "Documento": "CPX", "pedidos": 3, "promedio": 7.9}, {"Mes": "2026-08", "Documento": "CPY", "pedidos": 4, "promedio": 0.61}, {"Mes": "2026-08", "Documento": "CPZ", "pedidos": 37, "promedio": 0.4}, {"Mes": "2026-08", "Documento": "CRB", "pedidos": 78, "promedio": 1.23}, {"Mes": "2026-08", "Documento": "CRI", "pedidos": 25, "promedio": 0.96}, {"Mes": "2026-08", "Documento": "CRK", "pedidos": 9, "promedio": 0.44}], "uds_mes_tipo": [{"Mes": "2026-04", "Documento": "CPE", "Unidades": 864}, {"Mes": "2026-04", "Documento": "CPF", "Unidades": 3214}, {"Mes": "2026-04", "Documento": "CPG", "Unidades": 2247638}, {"Mes": "2026-04", "Documento": "CPL", "Unidades": 148732}, {"Mes": "2026-04", "Documento": "CPS", "Unidades": 101497}, {"Mes": "2026-04", "Documento": "CPV", "Unidades": 5698631}, {"Mes": "2026-04", "Documento": "CPW", "Unidades": 18116}, {"Mes": "2026-04", "Documento": "CPZ", "Unidades": 5}, {"Mes": "2026-04", "Documento": "CRB", "Unidades": 1105107}, {"Mes": "2026-04", "Documento": "CRI", "Unidades": 2349}, {"Mes": "2026-04", "Documento": "CRK", "Unidades": 20835}, {"Mes": "2026-04", "Documento": "CRT", "Unidades": 436457}, {"Mes": "2026-04", "Documento": "CTT", "Unidades": 39296}, {"Mes": "2026-05", "Documento": "CPE", "Unidades": 851}, {"Mes": "2026-05", "Documento": "CPF", "Unidades": 5877}, {"Mes": "2026-05", "Documento": "CPG", "Unidades": 1949124}, {"Mes": "2026-05", "Documento": "CPL", "Unidades": 303784}, {"Mes": "2026-05", "Documento": "CPS", "Unidades": 185275}, {"Mes": "2026-05", "Documento": "CPV", "Unidades": 4329699}, {"Mes": "2026-05", "Documento": "CPW", "Unidades": 30234}, {"Mes": "2026-05", "Documento": "CPY", "Unidades": 6521288}, {"Mes": "2026-05", "Documento": "CPZ", "Unidades": 757}, {"Mes": "2026-05", "Documento": "CRB", "Unidades": 6671959}, {"Mes": "2026-05", "Documento": "CRI", "Unidades": 1356}, {"Mes": "2026-05", "Documento": "CRK", "Unidades": 9613}, {"Mes": "2026-05", "Documento": "CRT", "Unidades": 331638}, {"Mes": "2026-05", "Documento": "CTT", "Unidades": 12928}, {"Mes": "2026-06", "Documento": "CPE", "Unidades": 448}, {"Mes": "2026-06", "Documento": "CPF", "Unidades": 3451}, {"Mes": "2026-06", "Documento": "CPG", "Unidades": 1716811}, {"Mes": "2026-06", "Documento": "CPL", "Unidades": 371435}, {"Mes": "2026-06", "Documento": "CPS", "Unidades": 3301}, {"Mes": "2026-06", "Documento": "CPV", "Unidades": 3781037}, {"Mes": "2026-06", "Documento": "CPW", "Unidades": 37715}, {"Mes": "2026-06", "Documento": "CPX", "Unidades": 96780}, {"Mes": "2026-06", "Documento": "CPY", "Unidades": 10591392}, {"Mes": "2026-06", "Documento": "CPZ", "Unidades": 156}, {"Mes": "2026-06", "Documento": "CRB", "Unidades": 3059397}, {"Mes": "2026-06", "Documento": "CRI", "Unidades": 4605}, {"Mes": "2026-06", "Documento": "CRK", "Unidades": 164}, {"Mes": "2026-06", "Documento": "CRT", "Unidades": 65810}, {"Mes": "2026-06", "Documento": "CTT", "Unidades": 15541}, {"Mes": "2026-06", "Documento": "PED_REABA", "Unidades": 9290}, {"Mes": "2026-07", "Documento": "CPE", "Unidades": 538}, {"Mes": "2026-07", "Documento": "CPF", "Unidades": 2585}, {"Mes": "2026-07", "Documento": "CPG", "Unidades": 4114997}, {"Mes": "2026-07", "Documento": "CPH", "Unidades": 76682}, {"Mes": "2026-07", "Documento": "CPK", "Unidades": 1176}, {"Mes": "2026-07", "Documento": "CPL", "Unidades": 1713908}, {"Mes": "2026-07", "Documento": "CPQ", "Unidades": 32}, {"Mes": "2026-07", "Documento": "CPS", "Unidades": 577001}, {"Mes": "2026-07", "Documento": "CPV", "Unidades": 2030917}, {"Mes": "2026-07", "Documento": "CPW", "Unidades": 41154}, {"Mes": "2026-07", "Documento": "CPX", "Unidades": 294990}, {"Mes": "2026-07", "Documento": "CPY", "Unidades": 1492268}, {"Mes": "2026-07", "Documento": "CPZ", "Unidades": 146}, {"Mes": "2026-07", "Documento": "CRB", "Unidades": 11067171}, {"Mes": "2026-07", "Documento": "CRI", "Unidades": 7268}, {"Mes": "2026-07", "Documento": "CRK", "Unidades": 123}, {"Mes": "2026-07", "Documento": "CRT", "Unidades": 32347}, {"Mes": "2026-07", "Documento": "CTT", "Unidades": 22587}, {"Mes": "2026-08", "Documento": "CPE", "Unidades": 453}, {"Mes": "2026-08", "Documento": "CPF", "Unidades": 1459}, {"Mes": "2026-08", "Documento": "CPG", "Unidades": 804324}, {"Mes": "2026-08", "Documento": "CPH", "Unidades": 16380}, {"Mes": "2026-08", "Documento": "CPJ", "Unidades": 99496}, {"Mes": "2026-08", "Documento": "CPK", "Unidades": 162}, {"Mes": "2026-08", "Documento": "CPL", "Unidades": 1741853}, {"Mes": "2026-08", "Documento": "CPQ", "Unidades": 171}, {"Mes": "2026-08", "Documento": "CPS", "Unidades": 66923}, {"Mes": "2026-08", "Documento": "CPV", "Unidades": 1159577}, {"Mes": "2026-08", "Documento": "CPW", "Unidades": 22939}, {"Mes": "2026-08", "Documento": "CPX", "Unidades": 17203804}, {"Mes": "2026-08", "Documento": "CPY", "Unidades": 662617}, {"Mes": "2026-08", "Documento": "CPZ", "Unidades": 80}, {"Mes": "2026-08", "Documento": "CRB", "Unidades": 604766}, {"Mes": "2026-08", "Documento": "CRI", "Unidades": 103}, {"Mes": "2026-08", "Documento": "CRK", "Unidades": 3423}, {"Mes": "2026-08", "Documento": "CRT", "Unidades": 9395}, {"Mes": "2026-08", "Documento": "CTT", "Unidades": 4309}], "ciclo_global": [{"Documento": "CPE", "pedidos": 211, "promedio": 0.2}, {"Documento": "CPF", "pedidos": 1013, "promedio": 2.29}, {"Documento": "CPG", "pedidos": 128, "promedio": 1.0}, {"Documento": "CPH", "pedidos": 4, "promedio": 0.69}, {"Documento": "CPJ", "pedidos": 3, "promedio": 3.42}, {"Documento": "CPK", "pedidos": 2, "promedio": 0.48}, {"Documento": "CPL", "pedidos": 28, "promedio": 2.34}, {"Documento": "CPQ", "pedidos": 29, "promedio": 1.58}, {"Documento": "CPS", "pedidos": 370, "promedio": 1.82}, {"Documento": "CPV", "pedidos": 437, "promedio": 3.03}, {"Documento": "CPW", "pedidos": 10162, "promedio": 1.96}, {"Documento": "CPX", "pedidos": 16, "promedio": 5.18}, {"Documento": "CPY", "pedidos": 12, "promedio": 2.14}, {"Documento": "CPZ", "pedidos": 100, "promedio": 0.36}, {"Documento": "CRB", "pedidos": 455, "promedio": 1.13}, {"Documento": "CRI", "pedidos": 503, "promedio": 1.02}, {"Documento": "CRK", "pedidos": 25, "promedio": 0.52}, {"Documento": "CRT", "pedidos": 85, "promedio": 1.68}], "tipos": ["CPE", "CPF", "CPG", "CPH", "CPJ", "CPK", "CPL", "CPQ", "CPS", "CPV", "CPW", "CPX", "CPY", "CPZ", "CRB", "CRI", "CRK", "CRT", "CTT", "PED_REABA"], "meses": ["2026-04", "2026-05", "2026-06", "2026-07", "2026-08"]};
 
-const INV      = {"inv_det": [{"Consecutivo": 15, "Nombre": "INVENTARIO DE VESTIDOS DE BAÑO", "Mes": "2026-04", "total": 133, "conf_prom": 88.54, "iguales": 102, "faltantes": 12, "sobrantes": 19, "conf_ref": 76.69, "categoria": null}, {"Consecutivo": 16, "Nombre": "CICLICO MATERIA PRIMA", "Mes": "2026-04", "total": 68, "conf_prom": 95.74, "iguales": 65, "faltantes": 2, "sobrantes": 1, "conf_ref": 95.59, "categoria": "MP"}, {"Consecutivo": 18, "Nombre": "INVENTARIO FRESHING POP 2", "Mes": "2026-05", "total": 1, "conf_prom": 0.0, "iguales": 1, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 19, "Nombre": "Ciclico PT", "Mes": "2026-05", "total": 383, "conf_prom": 99.48, "iguales": 381, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.48, "categoria": "PT"}, {"Consecutivo": 20, "Nombre": "Cíclico Calle 7", "Mes": "2026-05", "total": 294, "conf_prom": 97.95, "iguales": 288, "faltantes": 3, "sobrantes": 3, "conf_ref": 97.96, "categoria": "PT"}, {"Consecutivo": 21, "Nombre": "Cíclico Vestidos de Baño", "Mes": "2026-05", "total": 13, "conf_prom": 100.0, "iguales": 13, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": null}, {"Consecutivo": 22, "Nombre": "Cíclico Pt", "Mes": "2026-05", "total": 286, "conf_prom": 99.3, "iguales": 284, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.3, "categoria": "PT"}, {"Consecutivo": 23, "Nombre": "Cíclico Kits", "Mes": "2026-05", "total": 171, "conf_prom": 99.12, "iguales": 169, "faltantes": 2, "sobrantes": 0, "conf_ref": 98.83, "categoria": "PT"}, {"Consecutivo": 24, "Nombre": "Cíclico PT", "Mes": "2026-05", "total": 274, "conf_prom": 98.54, "iguales": 270, "faltantes": 2, "sobrantes": 2, "conf_ref": 98.54, "categoria": "PT"}, {"Consecutivo": 25, "Nombre": "Cíclico Vestidos de Baño", "Mes": "2026-05", "total": 30, "conf_prom": 98.78, "iguales": 25, "faltantes": 3, "sobrantes": 2, "conf_ref": 83.33, "categoria": null}, {"Consecutivo": 26, "Nombre": "Cíclico PT", "Mes": "2026-05", "total": 439, "conf_prom": 99.54, "iguales": 437, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.54, "categoria": "PT"}, {"Consecutivo": 28, "Nombre": "ciclico PT", "Mes": "2026-06", "total": 148, "conf_prom": 76.35, "iguales": 113, "faltantes": 35, "sobrantes": 0, "conf_ref": 76.35, "categoria": "PT"}, {"Consecutivo": 29, "Nombre": "MP", "Mes": "2026-06", "total": 17, "conf_prom": 100.0, "iguales": 17, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 30, "Nombre": "ME", "Mes": "2026-06", "total": 193, "conf_prom": 100.0, "iguales": 193, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 31, "Nombre": "PT", "Mes": "2026-06", "total": 357, "conf_prom": 100.0, "iguales": 357, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 36, "Nombre": "pt", "Mes": "2026-07", "total": 33, "conf_prom": 100.0, "iguales": 33, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 37, "Nombre": "modulo 6", "Mes": "2026-07", "total": 64, "conf_prom": 91.47, "iguales": 57, "faltantes": 3, "sobrantes": 4, "conf_ref": 89.06, "categoria": "PT"}, {"Consecutivo": 38, "Nombre": "modulo 09", "Mes": "2026-07", "total": 60, "conf_prom": 98.06, "iguales": 58, "faltantes": 1, "sobrantes": 1, "conf_ref": 96.67, "categoria": "PT"}, {"Consecutivo": 39, "Nombre": "MODULO 08", "Mes": "2026-07", "total": 42, "conf_prom": 97.25, "iguales": 40, "faltantes": 1, "sobrantes": 1, "conf_ref": 95.24, "categoria": "PT"}, {"Consecutivo": 40, "Nombre": "MODULO 07", "Mes": "2026-07", "total": 54, "conf_prom": 91.63, "iguales": 48, "faltantes": 3, "sobrantes": 3, "conf_ref": 88.89, "categoria": "PT"}, {"Consecutivo": 41, "Nombre": "INVENTARIO PT C6 RACK 13", "Mes": "2026-07", "total": 338, "conf_prom": 100.0, "iguales": 338, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 42, "Nombre": "INVENTARIO MP C1 RACK 13", "Mes": "2026-07", "total": 326, "conf_prom": 99.39, "iguales": 324, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.39, "categoria": "MP"}, {"Consecutivo": 43, "Nombre": "INVENTARIO PT C6 RACK 12", "Mes": "2026-07", "total": 299, "conf_prom": 99.33, "iguales": 297, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.33, "categoria": "PT"}, {"Consecutivo": 44, "Nombre": "INVENTARIO MP C1 RACK 13", "Mes": "2026-07", "total": 456, "conf_prom": 100.0, "iguales": 456, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 45, "Nombre": "INVENTARIO PT C6 RACK 11", "Mes": "2026-07", "total": 393, "conf_prom": 100.0, "iguales": 393, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 46, "Nombre": "MODULO 05", "Mes": "2026-07", "total": 77, "conf_prom": 98.53, "iguales": 72, "faltantes": 3, "sobrantes": 2, "conf_ref": 93.51, "categoria": "PT"}, {"Consecutivo": 47, "Nombre": "INVENTARIO MP C1 RACK 11", "Mes": "2026-07", "total": 324, "conf_prom": 100.0, "iguales": 324, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 48, "Nombre": "INVENTARIO PT C6 RACK 10", "Mes": "2026-07", "total": 324, "conf_prom": 100.0, "iguales": 324, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 49, "Nombre": "INVENTARIO MP C1 RACK 10", "Mes": "2026-07", "total": 586, "conf_prom": 98.63, "iguales": 586, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 50, "Nombre": "INVENTARIO PT C6 RACK 09", "Mes": "2026-07", "total": 375, "conf_prom": 98.79, "iguales": 368, "faltantes": 4, "sobrantes": 3, "conf_ref": 98.13, "categoria": "PT"}, {"Consecutivo": 51, "Nombre": "INVENTARIO PT C6 RACK 08", "Mes": "2026-07", "total": 405, "conf_prom": 100.0, "iguales": 405, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 52, "Nombre": "INVENTARIO MP C1 RACK 09", "Mes": "2026-07", "total": 354, "conf_prom": 100.0, "iguales": 354, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 54, "Nombre": "NVENTARIO MP C1 RACK 08", "Mes": "2026-07", "total": 117, "conf_prom": 100.0, "iguales": 117, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 55, "Nombre": "INVENTARIO MP C1 RACK 08", "Mes": "2026-08", "total": 320, "conf_prom": 100.0, "iguales": 320, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 56, "Nombre": "INVENTARIO MP C1 RACK 07", "Mes": "2026-08", "total": 249, "conf_prom": 100.0, "iguales": 249, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 57, "Nombre": "INVENTARIO MP C1 RACK 06", "Mes": "2026-08", "total": 564, "conf_prom": 100.0, "iguales": 564, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 58, "Nombre": "INVENTARIO PT C6 RACK 07", "Mes": "2026-08", "total": 378, "conf_prom": 99.47, "iguales": 376, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.47, "categoria": "PT"}, {"Consecutivo": 59, "Nombre": "INVENTARIO PT C6 RACK 06", "Mes": "2026-08", "total": 306, "conf_prom": 100.0, "iguales": 306, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 60, "Nombre": "INVENTARIO MP C1 RACK  05", "Mes": "2026-08", "total": 330, "conf_prom": 100.0, "iguales": 330, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 61, "Nombre": "MODULO 09", "Mes": "2026-08", "total": 71, "conf_prom": 96.38, "iguales": 67, "faltantes": 2, "sobrantes": 2, "conf_ref": 94.37, "categoria": "PT"}, {"Consecutivo": 62, "Nombre": "MODULO 08", "Mes": "2026-08", "total": 66, "conf_prom": 99.7, "iguales": 65, "faltantes": 1, "sobrantes": 0, "conf_ref": 98.48, "categoria": "PT"}, {"Consecutivo": 63, "Nombre": "INVENTARIO MP C1 RACK 04", "Mes": "2026-08", "total": 197, "conf_prom": 100.0, "iguales": 197, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 64, "Nombre": "MODULO 07", "Mes": "2026-08", "total": 53, "conf_prom": 97.03, "iguales": 50, "faltantes": 2, "sobrantes": 1, "conf_ref": 94.34, "categoria": "PT"}, {"Consecutivo": 65, "Nombre": "MODULO 06", "Mes": "2026-08", "total": 69, "conf_prom": 99.95, "iguales": 68, "faltantes": 1, "sobrantes": 0, "conf_ref": 98.55, "categoria": "PT"}, {"Consecutivo": 66, "Nombre": "INVENTARIO MP C1 RACK 03", "Mes": "2026-08", "total": 184, "conf_prom": 89.13, "iguales": 164, "faltantes": 10, "sobrantes": 10, "conf_ref": 89.13, "categoria": "MP"}, {"Consecutivo": 67, "Nombre": "INVENTARIO PT C6 RACK 05", "Mes": "2026-08", "total": 464, "conf_prom": 100.0, "iguales": 464, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 68, "Nombre": "INVENTARIO MP C1 RACK 02", "Mes": "2026-08", "total": 212, "conf_prom": 100.0, "iguales": 212, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 69, "Nombre": "INVENTARIO MP C1 RACK 01", "Mes": "2026-08", "total": 171, "conf_prom": 98.83, "iguales": 169, "faltantes": 1, "sobrantes": 1, "conf_ref": 98.83, "categoria": "MP"}, {"Consecutivo": 70, "Nombre": "INVENTARIO PT C6 RACK 04", "Mes": "2026-08", "total": 151, "conf_prom": 100.0, "iguales": 151, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 71, "Nombre": "INVENTARIO MP C2 RACK 01", "Mes": "2026-08", "total": 347, "conf_prom": 100.0, "iguales": 347, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 72, "Nombre": "MODULO 05", "Mes": "2026-08", "total": 75, "conf_prom": 99.97, "iguales": 74, "faltantes": 1, "sobrantes": 0, "conf_ref": 98.67, "categoria": "PT"}, {"Consecutivo": 73, "Nombre": "MODULO 04", "Mes": "2026-08", "total": 65, "conf_prom": 96.92, "iguales": 63, "faltantes": 1, "sobrantes": 1, "conf_ref": 96.92, "categoria": "PT"}, {"Consecutivo": 74, "Nombre": "INVENTARIO MP C2 RACK 02", "Mes": "2026-08", "total": 219, "conf_prom": 100.0, "iguales": 219, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 75, "Nombre": "INVENTARIO PT C4 RACK 13", "Mes": "2026-08", "total": 500, "conf_prom": 100.0, "iguales": 500, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 76, "Nombre": "INVENTARIO PT C5 RACK 13", "Mes": "2026-08", "total": 300, "conf_prom": 100.0, "iguales": 300, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 77, "Nombre": "INVENTARIO PT C4 RACK 12", "Mes": "2026-08", "total": 314, "conf_prom": 99.36, "iguales": 312, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.36, "categoria": "PT"}, {"Consecutivo": 78, "Nombre": "INVENTARIO PT C5 RACK  12", "Mes": "2026-08", "total": 494, "conf_prom": 100.0, "iguales": 494, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}], "kpi_meses": [{"Mes": "2026-04", "conf_pct": 83.1, "contenedores": 201, "conteos": 2, "faltantes": 14, "sobrantes": 20, "conf_unidades_pct": 82.6, "dif_unidades": 1300217, "saldo_inicial_unidades": 7462283}, {"Mes": "2026-05", "conf_pct": 98.8, "contenedores": 1891, "conteos": 9, "faltantes": 13, "sobrantes": 10, "conf_unidades_pct": 99.4, "dif_unidades": 942, "saldo_inicial_unidades": 154655}, {"Mes": "2026-06", "conf_pct": 95.1, "contenedores": 715, "conteos": 4, "faltantes": 35, "sobrantes": 0, "conf_unidades_pct": 100.0, "dif_unidades": 1400, "saldo_inicial_unidades": 4986168}, {"Mes": "2026-07", "conf_pct": 99.3, "contenedores": 4627, "conteos": 18, "faltantes": 17, "sobrantes": 16, "conf_unidades_pct": 98.8, "dif_unidades": 400841, "saldo_inicial_unidades": 33432895}, {"Mes": "2026-08", "conf_pct": 99.4, "contenedores": 6099, "conteos": 24, "faltantes": 21, "sobrantes": 17, "conf_unidades_pct": 100.0, "dif_unidades": 16869, "saldo_inicial_unidades": 40363924}], "total_difs": {"faltantes": 100, "sobrantes": 63}, "conf_unidades_pct_global": 98.0, "cobertura_ciclicos_total": {"revisados": 9898, "total": 24982, "pct": 39.6}, "cobertura_ciclicos_zonas": [{"zona": "Almacenamiento PT", "revisados": 9613, "total": 24176, "pct": 39.8}, {"zona": "Almacenamiento picking", "revisados": 1, "total": 21, "pct": 4.8}, {"zona": "Novaventa", "revisados": 1, "total": 109, "pct": 0.9}, {"zona": "Picking Dinámico", "revisados": 283, "total": 676, "pct": 41.9}], "cobertura_ciclicos_snapshot_fecha": "2026-08-31", "alertas_confiabilidad_baja": []};
+const INV      = {"inv_det": [{"Consecutivo": 15, "Nombre": "INVENTARIO DE VESTIDOS DE BAÑO", "Mes": "2026-04", "total": 133, "conf_prom": 88.54, "iguales": 102, "faltantes": 12, "sobrantes": 19, "conf_ref": 76.69, "categoria": null}, {"Consecutivo": 16, "Nombre": "CICLICO MATERIA PRIMA", "Mes": "2026-04", "total": 68, "conf_prom": 95.74, "iguales": 65, "faltantes": 2, "sobrantes": 1, "conf_ref": 95.59, "categoria": "MP"}, {"Consecutivo": 18, "Nombre": "INVENTARIO FRESHING POP 2", "Mes": "2026-05", "total": 1, "conf_prom": 0.0, "iguales": 1, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 19, "Nombre": "Ciclico PT", "Mes": "2026-05", "total": 383, "conf_prom": 99.48, "iguales": 381, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.48, "categoria": "PT"}, {"Consecutivo": 20, "Nombre": "Cíclico Calle 7", "Mes": "2026-05", "total": 294, "conf_prom": 97.95, "iguales": 288, "faltantes": 3, "sobrantes": 3, "conf_ref": 97.96, "categoria": "PT"}, {"Consecutivo": 21, "Nombre": "Cíclico Vestidos de Baño", "Mes": "2026-05", "total": 13, "conf_prom": 100.0, "iguales": 13, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": null}, {"Consecutivo": 22, "Nombre": "Cíclico Pt", "Mes": "2026-05", "total": 286, "conf_prom": 99.3, "iguales": 284, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.3, "categoria": "PT"}, {"Consecutivo": 23, "Nombre": "Cíclico Kits", "Mes": "2026-05", "total": 171, "conf_prom": 99.12, "iguales": 169, "faltantes": 2, "sobrantes": 0, "conf_ref": 98.83, "categoria": "PT"}, {"Consecutivo": 24, "Nombre": "Cíclico PT", "Mes": "2026-05", "total": 274, "conf_prom": 98.54, "iguales": 270, "faltantes": 2, "sobrantes": 2, "conf_ref": 98.54, "categoria": "PT"}, {"Consecutivo": 25, "Nombre": "Cíclico Vestidos de Baño", "Mes": "2026-05", "total": 30, "conf_prom": 98.78, "iguales": 25, "faltantes": 3, "sobrantes": 2, "conf_ref": 83.33, "categoria": null}, {"Consecutivo": 26, "Nombre": "Cíclico PT", "Mes": "2026-05", "total": 439, "conf_prom": 99.54, "iguales": 437, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.54, "categoria": "PT"}, {"Consecutivo": 28, "Nombre": "ciclico PT", "Mes": "2026-06", "total": 148, "conf_prom": 76.35, "iguales": 113, "faltantes": 35, "sobrantes": 0, "conf_ref": 76.35, "categoria": "PT"}, {"Consecutivo": 29, "Nombre": "MP", "Mes": "2026-06", "total": 17, "conf_prom": 100.0, "iguales": 17, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 30, "Nombre": "ME", "Mes": "2026-06", "total": 193, "conf_prom": 100.0, "iguales": 193, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 31, "Nombre": "PT", "Mes": "2026-06", "total": 357, "conf_prom": 100.0, "iguales": 357, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 36, "Nombre": "pt", "Mes": "2026-07", "total": 33, "conf_prom": 100.0, "iguales": 33, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 37, "Nombre": "modulo 6", "Mes": "2026-07", "total": 64, "conf_prom": 91.47, "iguales": 57, "faltantes": 3, "sobrantes": 4, "conf_ref": 89.06, "categoria": "PT"}, {"Consecutivo": 38, "Nombre": "modulo 09", "Mes": "2026-07", "total": 60, "conf_prom": 98.06, "iguales": 58, "faltantes": 1, "sobrantes": 1, "conf_ref": 96.67, "categoria": "PT"}, {"Consecutivo": 39, "Nombre": "MODULO 08", "Mes": "2026-07", "total": 42, "conf_prom": 97.25, "iguales": 40, "faltantes": 1, "sobrantes": 1, "conf_ref": 95.24, "categoria": "PT"}, {"Consecutivo": 40, "Nombre": "MODULO 07", "Mes": "2026-07", "total": 54, "conf_prom": 91.63, "iguales": 48, "faltantes": 3, "sobrantes": 3, "conf_ref": 88.89, "categoria": "PT"}, {"Consecutivo": 41, "Nombre": "INVENTARIO PT C6 RACK 13", "Mes": "2026-07", "total": 338, "conf_prom": 100.0, "iguales": 338, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 42, "Nombre": "INVENTARIO MP C1 RACK 13", "Mes": "2026-07", "total": 326, "conf_prom": 99.39, "iguales": 324, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.39, "categoria": "MP"}, {"Consecutivo": 43, "Nombre": "INVENTARIO PT C6 RACK 12", "Mes": "2026-07", "total": 299, "conf_prom": 99.33, "iguales": 297, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.33, "categoria": "PT"}, {"Consecutivo": 44, "Nombre": "INVENTARIO MP C1 RACK 13", "Mes": "2026-07", "total": 456, "conf_prom": 100.0, "iguales": 456, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 45, "Nombre": "INVENTARIO PT C6 RACK 11", "Mes": "2026-07", "total": 393, "conf_prom": 100.0, "iguales": 393, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 46, "Nombre": "MODULO 05", "Mes": "2026-07", "total": 77, "conf_prom": 98.53, "iguales": 72, "faltantes": 3, "sobrantes": 2, "conf_ref": 93.51, "categoria": "PT"}, {"Consecutivo": 47, "Nombre": "INVENTARIO MP C1 RACK 11", "Mes": "2026-07", "total": 324, "conf_prom": 100.0, "iguales": 324, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 48, "Nombre": "INVENTARIO PT C6 RACK 10", "Mes": "2026-07", "total": 324, "conf_prom": 100.0, "iguales": 324, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 49, "Nombre": "INVENTARIO MP C1 RACK 10", "Mes": "2026-07", "total": 586, "conf_prom": 98.63, "iguales": 586, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 50, "Nombre": "INVENTARIO PT C6 RACK 09", "Mes": "2026-07", "total": 375, "conf_prom": 98.79, "iguales": 368, "faltantes": 4, "sobrantes": 3, "conf_ref": 98.13, "categoria": "PT"}, {"Consecutivo": 51, "Nombre": "INVENTARIO PT C6 RACK 08", "Mes": "2026-07", "total": 405, "conf_prom": 100.0, "iguales": 405, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 52, "Nombre": "INVENTARIO MP C1 RACK 09", "Mes": "2026-07", "total": 354, "conf_prom": 100.0, "iguales": 354, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 54, "Nombre": "NVENTARIO MP C1 RACK 08", "Mes": "2026-07", "total": 117, "conf_prom": 100.0, "iguales": 117, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 55, "Nombre": "INVENTARIO MP C1 RACK 08", "Mes": "2026-08", "total": 320, "conf_prom": 100.0, "iguales": 320, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 56, "Nombre": "INVENTARIO MP C1 RACK 07", "Mes": "2026-08", "total": 249, "conf_prom": 100.0, "iguales": 249, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 57, "Nombre": "INVENTARIO MP C1 RACK 06", "Mes": "2026-08", "total": 564, "conf_prom": 100.0, "iguales": 564, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 58, "Nombre": "INVENTARIO PT C6 RACK 07", "Mes": "2026-08", "total": 378, "conf_prom": 99.47, "iguales": 376, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.47, "categoria": "PT"}, {"Consecutivo": 59, "Nombre": "INVENTARIO PT C6 RACK 06", "Mes": "2026-08", "total": 306, "conf_prom": 100.0, "iguales": 306, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 60, "Nombre": "INVENTARIO MP C1 RACK  05", "Mes": "2026-08", "total": 330, "conf_prom": 100.0, "iguales": 330, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 61, "Nombre": "MODULO 09", "Mes": "2026-08", "total": 71, "conf_prom": 96.38, "iguales": 67, "faltantes": 2, "sobrantes": 2, "conf_ref": 94.37, "categoria": "PT"}, {"Consecutivo": 62, "Nombre": "MODULO 08", "Mes": "2026-08", "total": 66, "conf_prom": 99.7, "iguales": 65, "faltantes": 1, "sobrantes": 0, "conf_ref": 98.48, "categoria": "PT"}, {"Consecutivo": 63, "Nombre": "INVENTARIO MP C1 RACK 04", "Mes": "2026-08", "total": 197, "conf_prom": 100.0, "iguales": 197, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 64, "Nombre": "MODULO 07", "Mes": "2026-08", "total": 53, "conf_prom": 97.03, "iguales": 50, "faltantes": 2, "sobrantes": 1, "conf_ref": 94.34, "categoria": "PT"}, {"Consecutivo": 65, "Nombre": "MODULO 06", "Mes": "2026-08", "total": 69, "conf_prom": 99.95, "iguales": 68, "faltantes": 1, "sobrantes": 0, "conf_ref": 98.55, "categoria": "PT"}, {"Consecutivo": 66, "Nombre": "INVENTARIO MP C1 RACK 03", "Mes": "2026-08", "total": 184, "conf_prom": 89.13, "iguales": 164, "faltantes": 10, "sobrantes": 10, "conf_ref": 89.13, "categoria": "MP"}, {"Consecutivo": 67, "Nombre": "INVENTARIO PT C6 RACK 05", "Mes": "2026-08", "total": 464, "conf_prom": 100.0, "iguales": 464, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 68, "Nombre": "INVENTARIO MP C1 RACK 02", "Mes": "2026-08", "total": 212, "conf_prom": 100.0, "iguales": 212, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 69, "Nombre": "INVENTARIO MP C1 RACK 01", "Mes": "2026-08", "total": 171, "conf_prom": 98.83, "iguales": 169, "faltantes": 1, "sobrantes": 1, "conf_ref": 98.83, "categoria": "MP"}, {"Consecutivo": 70, "Nombre": "INVENTARIO PT C6 RACK 04", "Mes": "2026-08", "total": 151, "conf_prom": 100.0, "iguales": 151, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 71, "Nombre": "INVENTARIO MP C2 RACK 01", "Mes": "2026-08", "total": 347, "conf_prom": 100.0, "iguales": 347, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 72, "Nombre": "MODULO 05", "Mes": "2026-08", "total": 75, "conf_prom": 99.97, "iguales": 74, "faltantes": 1, "sobrantes": 0, "conf_ref": 98.67, "categoria": "PT"}, {"Consecutivo": 73, "Nombre": "MODULO 04", "Mes": "2026-08", "total": 65, "conf_prom": 96.92, "iguales": 63, "faltantes": 1, "sobrantes": 1, "conf_ref": 96.92, "categoria": "PT"}, {"Consecutivo": 74, "Nombre": "INVENTARIO MP C2 RACK 02", "Mes": "2026-08", "total": 219, "conf_prom": 100.0, "iguales": 219, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "MP"}, {"Consecutivo": 75, "Nombre": "INVENTARIO PT C4 RACK 13", "Mes": "2026-08", "total": 500, "conf_prom": 100.0, "iguales": 500, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 76, "Nombre": "INVENTARIO PT C5 RACK 13", "Mes": "2026-08", "total": 300, "conf_prom": 100.0, "iguales": 300, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}, {"Consecutivo": 77, "Nombre": "INVENTARIO PT C4 RACK 12", "Mes": "2026-08", "total": 314, "conf_prom": 99.36, "iguales": 312, "faltantes": 1, "sobrantes": 1, "conf_ref": 99.36, "categoria": "PT"}, {"Consecutivo": 78, "Nombre": "INVENTARIO PT C5 RACK  12", "Mes": "2026-08", "total": 494, "conf_prom": 100.0, "iguales": 494, "faltantes": 0, "sobrantes": 0, "conf_ref": 100.0, "categoria": "PT"}], "kpi_meses": [{"Mes": "2026-04", "conf_pct": 83.1, "contenedores": 201, "conteos": 2, "faltantes": 14, "sobrantes": 20, "conf_unidades_pct": 82.6, "dif_unidades": 1300217, "saldo_inicial_unidades": 7462283}, {"Mes": "2026-05", "conf_pct": 98.8, "contenedores": 1891, "conteos": 9, "faltantes": 13, "sobrantes": 10, "conf_unidades_pct": 99.4, "dif_unidades": 942, "saldo_inicial_unidades": 154655}, {"Mes": "2026-06", "conf_pct": 95.1, "contenedores": 715, "conteos": 4, "faltantes": 35, "sobrantes": 0, "conf_unidades_pct": 100.0, "dif_unidades": 1400, "saldo_inicial_unidades": 4986168}, {"Mes": "2026-07", "conf_pct": 99.3, "contenedores": 4627, "conteos": 18, "faltantes": 17, "sobrantes": 16, "conf_unidades_pct": 98.8, "dif_unidades": 400841, "saldo_inicial_unidades": 33432895}, {"Mes": "2026-08", "conf_pct": 99.4, "contenedores": 6099, "conteos": 24, "faltantes": 21, "sobrantes": 17, "conf_unidades_pct": 100.0, "dif_unidades": 16869, "saldo_inicial_unidades": 40363924}], "total_difs": {"faltantes": 100, "sobrantes": 63}, "conf_unidades_pct_global": 98.0, "cobertura_ciclicos_total": {"revisados": 9895, "total": 24980, "pct": 39.6}, "cobertura_ciclicos_zonas": [{"zona": "Almacenamiento PT", "revisados": 9613, "total": 24177, "pct": 39.8}, {"zona": "Almacenamiento picking", "revisados": 1, "total": 21, "pct": 4.8}, {"zona": "Novaventa", "revisados": 1, "total": 110, "pct": 0.9}, {"zona": "Picking Dinámico", "revisados": 280, "total": 672, "pct": 41.7}], "cobertura_ciclicos_snapshot_fecha": "2026-08-31", "alertas_confiabilidad_baja": []};
 
 const PICK     = {"pick_mes": [{"Mes": "2026-04", "jornadas": 76, "pedidos": 2223, "unidades": 127694, "minutos": 27368.2, "uds_x_min": 4.67}, {"Mes": "2026-05", "jornadas": 76, "pedidos": 2671, "unidades": 142809, "minutos": 25517.39, "uds_x_min": 5.6}, {"Mes": "2026-06", "jornadas": 72, "pedidos": 3273, "unidades": 129201, "minutos": 20216.65, "uds_x_min": 6.39}, {"Mes": "2026-07", "jornadas": 70, "pedidos": 3651, "unidades": 141792, "minutos": 17132.58, "uds_x_min": 8.28}, {"Mes": "2026-08", "jornadas": 54, "pedidos": 1722, "unidades": 87603, "minutos": 12329.11, "uds_x_min": 7.11}], "pick_op_mes": [{"Mes": "2026-04", "Nombre": "Abelardo Botero", "jornadas": 5, "unidades": 929, "minutos": 134.86, "uds_hora": 413.3, "uds_x_min": 6.89}, {"Mes": "2026-04", "Nombre": "Alejandro Herrera Zapata", "jornadas": 20, "unidades": 33172, "minutos": 8115.94, "uds_hora": 245.2, "uds_x_min": 4.09}, {"Mes": "2026-04", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 128, "minutos": 117.35, "uds_hora": 65.4, "uds_x_min": 1.09}, {"Mes": "2026-04", "Nombre": "Esteban Montoya Cacante", "jornadas": 5, "unidades": 132, "minutos": 899.78, "uds_hora": 8.8, "uds_x_min": 0.15}, {"Mes": "2026-04", "Nombre": "Fabian Hernandez", "jornadas": 20, "unidades": 30691, "minutos": 8536.24, "uds_hora": 215.7, "uds_x_min": 3.6}, {"Mes": "2026-04", "Nombre": "Juan Pablo Sáenz", "jornadas": 2, "unidades": 1118, "minutos": 42.48, "uds_hora": 1579.1, "uds_x_min": 26.32}, {"Mes": "2026-04", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 51617, "minutos": 8410.42, "uds_hora": 368.2, "uds_x_min": 6.14}, {"Mes": "2026-04", "Nombre": "Santiago Ayala Cardenas", "jornadas": 5, "unidades": 9640, "minutos": 992.9, "uds_hora": 582.5, "uds_x_min": 9.71}, {"Mes": "2026-04", "Nombre": "Yojan Olvery Betancur Ospina", "jornadas": 1, "unidades": 267, "minutos": 118.23, "uds_hora": 135.5, "uds_x_min": 2.26}, {"Mes": "2026-05", "Nombre": "Abelardo Botero", "jornadas": 15, "unidades": 10609, "minutos": 2204.75, "uds_hora": 288.7, "uds_x_min": 4.81}, {"Mes": "2026-05", "Nombre": "Alejandro Herrera Zapata", "jornadas": 5, "unidades": 6152, "minutos": 1184.25, "uds_hora": 311.7, "uds_x_min": 5.19}, {"Mes": "2026-05", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 9, "minutos": 71.68, "uds_hora": 7.5, "uds_x_min": 0.13}, {"Mes": "2026-05", "Nombre": "Esteban Montoya Cacante", "jornadas": 5, "unidades": 73, "minutos": 391.35, "uds_hora": 11.2, "uds_x_min": 0.19}, {"Mes": "2026-05", "Nombre": "Fabian Hernandez", "jornadas": 18, "unidades": 46889, "minutos": 7777.85, "uds_hora": 361.7, "uds_x_min": 6.03}, {"Mes": "2026-05", "Nombre": "Johan Smith Carmona Hernandez", "jornadas": 12, "unidades": 26021, "minutos": 4746.4, "uds_hora": 328.9, "uds_x_min": 5.48}, {"Mes": "2026-05", "Nombre": "Juan Fernando Gallego", "jornadas": 2, "unidades": 13560, "minutos": 396.85, "uds_hora": 2050.1, "uds_x_min": 34.17}, {"Mes": "2026-05", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 38597, "minutos": 8607.88, "uds_hora": 269.0, "uds_x_min": 4.48}, {"Mes": "2026-05", "Nombre": "Santiago Ayala Cardenas", "jornadas": 1, "unidades": 899, "minutos": 136.38, "uds_hora": 395.5, "uds_x_min": 6.59}, {"Mes": "2026-06", "Nombre": "Abelardo Botero", "jornadas": 10, "unidades": 29739, "minutos": 681.51, "uds_hora": 2618.2, "uds_x_min": 43.64}, {"Mes": "2026-06", "Nombre": "Alejandro Herrera Zapata", "jornadas": 3, "unidades": 648, "minutos": 205.24, "uds_hora": 189.4, "uds_x_min": 3.16}, {"Mes": "2026-06", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 89, "minutos": 44.6, "uds_hora": 119.7, "uds_x_min": 2.0}, {"Mes": "2026-06", "Nombre": "Esteban Montoya Cacante", "jornadas": 4, "unidades": 14, "minutos": 210.63, "uds_hora": 4.0, "uds_x_min": 0.07}, {"Mes": "2026-06", "Nombre": "Fabian Hernandez", "jornadas": 17, "unidades": 19349, "minutos": 4227.08, "uds_hora": 274.6, "uds_x_min": 4.58}, {"Mes": "2026-06", "Nombre": "Johan Smith Carmona Hernandez", "jornadas": 15, "unidades": 28506, "minutos": 6009.26, "uds_hora": 284.6, "uds_x_min": 4.74}, {"Mes": "2026-06", "Nombre": "Juan Pablo Sáenz", "jornadas": 1, "unidades": 150, "minutos": 18.25, "uds_hora": 493.2, "uds_x_min": 8.22}, {"Mes": "2026-06", "Nombre": "Samuel Jimenez Arenas", "jornadas": 17, "unidades": 48151, "minutos": 8095.55, "uds_hora": 356.9, "uds_x_min": 5.95}, {"Mes": "2026-06", "Nombre": "Santiago Ayala Cardenas", "jornadas": 3, "unidades": 2554, "minutos": 724.53, "uds_hora": 211.5, "uds_x_min": 3.53}, {"Mes": "2026-06", "Nombre": "Santiago Montoya Montoya", "jornadas": 1, "unidades": 1, "minutos": 0.0, "uds_hora": 0, "uds_x_min": 0}, {"Mes": "2026-07", "Nombre": "Abelardo Botero", "jornadas": 9, "unidades": 18373, "minutos": 415.03, "uds_hora": 2656.1, "uds_x_min": 44.27}, {"Mes": "2026-07", "Nombre": "Alejandro Herrera Zapata", "jornadas": 5, "unidades": 9899, "minutos": 1542.2, "uds_hora": 385.1, "uds_x_min": 6.42}, {"Mes": "2026-07", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 1, "unidades": 2600, "minutos": 43.13, "uds_hora": 3617.0, "uds_x_min": 60.28}, {"Mes": "2026-07", "Nombre": "Esteban Montoya Cacante", "jornadas": 3, "unidades": 12, "minutos": 72.7, "uds_hora": 9.9, "uds_x_min": 0.17}, {"Mes": "2026-07", "Nombre": "Fabian Hernandez", "jornadas": 19, "unidades": 34412, "minutos": 6378.53, "uds_hora": 323.7, "uds_x_min": 5.39}, {"Mes": "2026-07", "Nombre": "Johan Smith Carmona Hernandez", "jornadas": 7, "unidades": 9754, "minutos": 1972.44, "uds_hora": 296.7, "uds_x_min": 4.95}, {"Mes": "2026-07", "Nombre": "Juan Fernando Gallego", "jornadas": 4, "unidades": 20440, "minutos": 195.45, "uds_hora": 6274.8, "uds_x_min": 104.58}, {"Mes": "2026-07", "Nombre": "Samuel Jimenez Arenas", "jornadas": 18, "unidades": 45040, "minutos": 6408.68, "uds_hora": 421.7, "uds_x_min": 7.03}, {"Mes": "2026-07", "Nombre": "Santiago Ayala Cardenas", "jornadas": 2, "unidades": 1254, "minutos": 104.42, "uds_hora": 720.6, "uds_x_min": 12.01}, {"Mes": "2026-07", "Nombre": "Santiago Montoya Montoya", "jornadas": 2, "unidades": 8, "minutos": 0.0, "uds_hora": 0, "uds_x_min": 0}, {"Mes": "2026-08", "Nombre": "Alejandro Herrera Zapata", "jornadas": 15, "unidades": 15217, "minutos": 4433.93, "uds_hora": 205.9, "uds_x_min": 3.43}, {"Mes": "2026-08", "Nombre": "Elkin Stibal  Ruiz Lara", "jornadas": 3, "unidades": 54, "minutos": 128.52, "uds_hora": 25.2, "uds_x_min": 0.42}, {"Mes": "2026-08", "Nombre": "Fabian Hernandez", "jornadas": 9, "unidades": 9185, "minutos": 2472.69, "uds_hora": 222.9, "uds_x_min": 3.71}, {"Mes": "2026-08", "Nombre": "Johan Smith Carmona Hernandez", "jornadas": 6, "unidades": 28936, "minutos": 1139.63, "uds_hora": 1523.4, "uds_x_min": 25.39}, {"Mes": "2026-08", "Nombre": "Juan Fernando Gallego", "jornadas": 3, "unidades": 592, "minutos": 408.03, "uds_hora": 87.1, "uds_x_min": 1.45}, {"Mes": "2026-08", "Nombre": "Juan Pablo Sáenz", "jornadas": 3, "unidades": 2054, "minutos": 407.91, "uds_hora": 302.1, "uds_x_min": 5.04}, {"Mes": "2026-08", "Nombre": "Samuel Jimenez Arenas", "jornadas": 11, "unidades": 27077, "minutos": 3287.51, "uds_hora": 494.2, "uds_x_min": 8.24}, {"Mes": "2026-08", "Nombre": "Santiago Ayala Cardenas", "jornadas": 2, "unidades": 4337, "minutos": 24.94, "uds_hora": 10433.8, "uds_x_min": 173.9}, {"Mes": "2026-08", "Nombre": "Santiago Montoya Montoya", "jornadas": 2, "unidades": 151, "minutos": 25.95, "uds_hora": 349.1, "uds_x_min": 5.82}]};
 
@@ -1789,24 +1857,47 @@ function renderIndicadores(){
   const localMes = document.getElementById('i-mes-sel')?.value || 'todos';
   const mes = GF.mes || localMes;
 
-  // OTIF (2026-07-10): solo días hábiles se muestra en el dashboard — el
-  // cálculo calendario (IND.otif_mes/otif_tipo/otif_mes_tipo/otif_pct_global)
-  // sigue existiendo en agent.py pero ya no se renderiza en ningún lado, se
-  // dejó por si hace falta retomarlo. otifMeses/otifTipo/otifPctActual/otifSub
-  // abajo apuntan todos a los campos "_habil" para no tener que renombrar
-  // referencias downstream (gráfica "OTIF por tipo", tooltips, etc.).
-  const otifMeses = IND.otif_habil_mes || [];   // gráfica de tendencia: siempre todos los meses
+  // Filtro de tipo de pedido (multi). null = todos. Cuando hay tipos
+  // seleccionados, OTIF / Fill Rate / Pedido Perfecto / Quiebres se
+  // recalculan sumando SOLO esos tipos desde los arreglos IND.*_tipo /
+  // IND.*_mes_tipo (cada pedido tiene un único tipo, así que sumar los
+  // conteos por tipo no duplica pedidos).
+  const tiposSel = indTiposActivos();
+  const filtT = arr => tiposSel ? (arr || []).filter(x => tiposSel.includes(x.Documento)) : (arr || []);
+  const etiqTipos = tiposSel ? (tiposSel.length === 1 ? tiposSel[0] : `${tiposSel.length} tipos`) : null;
+
+  // Serie mensual de un indicador acotada a los tipos seleccionados:
+  // agrupa IND.<*>_mes_tipo por Mes y aplica calcFila(totales)->objeto fila.
+  const serieMesTipos = (rowsMesTipo, calcFila) =>
+    MESES_CICLO.map(M => {
+      const rr = filtT((rowsMesTipo || []).filter(r => r.Mes === M));
+      return rr.length ? {Mes: M, ...calcFila(_sumaTipos(rr))} : null;
+    }).filter(Boolean);
+
+  // OTIF (2026-07-10): solo días hábiles se muestra en el dashboard.
+  const otifMeses = tiposSel
+    ? serieMesTipos(IND.otif_habil_mes_tipo, t => ({
+        pedidos: t.pedidos, on_time: t.on_time,
+        otif_pct: t.pedidos ? +(t.on_time / t.pedidos * 100).toFixed(1) : 0}))
+    : (IND.otif_habil_mes || []);
   const otifLast  = otifMeses[otifMeses.length-1];
 
   // ── OTIF (mes + tipo) ──────────────────────────────────────
   let otifTipo, otifPctActual, otifSub;
   if(mes !== 'todos'){
-    otifTipo = (IND.otif_habil_mes_tipo||[]).filter(t=>t.Mes===mes);
+    otifTipo = filtT((IND.otif_habil_mes_tipo||[]).filter(t=>t.Mes===mes));
     const totPed = otifTipo.reduce((s,t)=>s+t.pedidos,0);
     const totOn  = otifTipo.reduce((s,t)=>s+t.on_time,0);
-    otifPctActual = totPed ? +(totOn/totPed*100).toFixed(1) : 0;
-    const mRow = otifMeses.find(m=>m.Mes===mes);
-    otifSub = mRow ? `${ml(mRow.Mes)}: ${fmt(mRow.otif_pct,1)}% (${mRow.on_time}/${mRow.pedidos})` : '—';
+    otifPctActual = totPed ? +(totOn/totPed*100).toFixed(1) : null;
+    otifSub = totPed
+      ? `${etiqTipos ? etiqTipos+' · ' : ''}${ml(mes)}: ${totOn}/${totPed} pedidos a tiempo`
+      : (etiqTipos ? `Sin pedidos de ${etiqTipos} en ${ml(mes)}` : '—');
+  } else if(tiposSel){
+    otifTipo = filtT(IND.otif_habil_tipo || []);
+    const totPed = otifTipo.reduce((s,t)=>s+t.pedidos,0);
+    const totOn  = otifTipo.reduce((s,t)=>s+t.on_time,0);
+    otifPctActual = totPed ? +(totOn/totPed*100).toFixed(1) : null;
+    otifSub = totPed ? `${etiqTipos} · ${totOn}/${totPed} pedidos a tiempo` : `Sin pedidos de ${etiqTipos}`;
   } else {
     otifTipo = IND.otif_habil_tipo || [];
     otifPctActual = IND.otif_habil_pct_global;
@@ -1814,12 +1905,21 @@ function renderIndicadores(){
   }
 
   // KPI 1 — OTIF (días hábiles)
-  document.getElementById('kpi-otif-val').textContent = otifMeses.length ? fmt(otifPctActual,1)+'%' : '—';
-  document.getElementById('kpi-otif-val').style.color = otifMeses.length ? cc(otifPctActual) : 'inherit';
+  document.getElementById('kpi-otif-val').textContent = (otifMeses.length && otifPctActual!=null) ? fmt(otifPctActual,1)+'%' : '—';
+  document.getElementById('kpi-otif-val').style.color = (otifMeses.length && otifPctActual!=null) ? cc(otifPctActual) : 'inherit';
   document.getElementById('kpi-otif-sub').textContent = otifSub;
 
   // ── Quiebres de stock (KPI = mes filtrado, o el último mes si "Todos") ──
-  const quiebresMeses = IND.quiebres_mes || [];
+  const _qCalc = t => ({
+    pct_pedidos_afectados: t.pedidos ? +(t.pedidos_afectados / t.pedidos * 100).toFixed(1) : 0,
+    pct_unidades_quiebre:  t.pedida_total ? +(t.pedida_quiebre / t.pedida_total * 100).toFixed(1) : 0,
+    pct_lineas_quiebre:    t.lineas ? +(t.lineas_quiebre / t.lineas * 100).toFixed(1) : 0,
+    pedidos: t.pedidos, pedidos_afectados: t.pedidos_afectados,
+    pedida_total: t.pedida_total, pedida_quiebre: t.pedida_quiebre,
+  });
+  const quiebresMeses = tiposSel
+    ? serieMesTipos(IND.quiebres_mes_tipo, _qCalc)
+    : (IND.quiebres_mes || []);
   const quiebreMesObjetivo = mes !== 'todos' ? mes : (quiebresMeses[quiebresMeses.length-1]?.Mes ?? null);
   const quiebreRow = quiebresMeses.find(m=>m.Mes===quiebreMesObjetivo);
   document.getElementById('kpi-quiebre-b-val').textContent = quiebreRow ? fmt(quiebreRow.pct_pedidos_afectados,1)+'%' : '—';
@@ -1827,48 +1927,57 @@ function renderIndicadores(){
   document.getElementById('kpi-quiebre-c-val').textContent = quiebreRow ? fmt(quiebreRow.pct_unidades_quiebre,1)+'%' : '—';
   document.getElementById('kpi-quiebre-c-val').style.color = quiebreRow ? ccInv(quiebreRow.pct_unidades_quiebre) : 'inherit';
   document.getElementById('kpi-quiebre-sub').textContent = quiebreRow
-    ? `${ml(quiebreRow.Mes)}: ${quiebreRow.pedidos_afectados}/${quiebreRow.pedidos} pedidos · ${quiebreRow.pedida_quiebre.toLocaleString('es-CO')}/${quiebreRow.pedida_total.toLocaleString('es-CO')} uds (${fmt(quiebreRow.pct_lineas_quiebre,1)}% de líneas)`
-    : 'Sin datos';
+    ? `${etiqTipos ? etiqTipos+' · ' : ''}${ml(quiebreRow.Mes)}: ${quiebreRow.pedidos_afectados}/${quiebreRow.pedidos} pedidos · ${quiebreRow.pedida_quiebre.toLocaleString('es-CO')}/${quiebreRow.pedida_total.toLocaleString('es-CO')} uds (${fmt(quiebreRow.pct_lineas_quiebre,1)}% de líneas)`
+    : (etiqTipos ? `Sin quiebres de ${etiqTipos} en el período` : 'Sin datos');
 
   // ── Fill Rate / Pedido Perfecto (por tipo, según mes) ───────
   let frTipo, fillRateActual, perfectoActual;
   if(mes !== 'todos'){
-    frTipo = (IND.fillrate_mes_tipo||[]).filter(t=>t.Mes===mes);
-    const totPedida = frTipo.reduce((s,t)=>s+t.pedida,0);
-    const totPrep   = frTipo.reduce((s,t)=>s+t.preparada,0);
-    fillRateActual  = totPedida ? +(totPrep/totPedida*100).toFixed(1) : 0;
-    const totPedidos   = frTipo.reduce((s,t)=>s+t.pedidos,0);
-    const totPerfectos = frTipo.reduce((s,t)=>s+t.perfectos,0);
-    perfectoActual = totPedidos ? +(totPerfectos/totPedidos*100).toFixed(1) : 0;
+    frTipo = filtT((IND.fillrate_mes_tipo||[]).filter(t=>t.Mes===mes));
   } else {
-    frTipo = IND.fillrate_tipo || [];
+    frTipo = filtT(IND.fillrate_tipo || []);
+  }
+  if(mes === 'todos' && !tiposSel){
     fillRateActual = IND.fill_rate_global;
     perfectoActual = IND.pedido_perfecto_pct_global;
+  } else {
+    const totPedida = frTipo.reduce((s,t)=>s+t.pedida,0);
+    const totPrep   = frTipo.reduce((s,t)=>s+t.preparada,0);
+    fillRateActual  = totPedida ? +(totPrep/totPedida*100).toFixed(1) : null;
+    const totPedidos   = frTipo.reduce((s,t)=>s+t.pedidos,0);
+    const totPerfectos = frTipo.reduce((s,t)=>s+t.perfectos,0);
+    perfectoActual = totPedidos ? +(totPerfectos/totPedidos*100).toFixed(1) : null;
   }
 
   // ── Quiebres por tipo (según mes) ───────────────────────────
-  const quiebreTipo = mes !== 'todos'
+  const quiebreTipo = filtT(mes !== 'todos'
     ? (IND.quiebres_mes_tipo||[]).filter(t=>t.Mes===mes)
-    : (IND.quiebres_tipo||[]);
+    : (IND.quiebres_tipo||[]));
 
   // "Empacado"/"Preparado" es un estado ACTUAL (no histórico) en arqueo_pedido_v2.xlsx:
   // un mes sin pedidos en ese estado no es un error de filtrado, es que ningún pedido
   // cargado ese mes sigue ahí hoy (ya avanzó a otro estado, o el mes es muy antiguo).
   const sinDatosMes = mes !== 'todos' && frTipo.length === 0;
+  const frOk = frTipo.length && fillRateActual != null;
+  const perfOk = frTipo.length && perfectoActual != null;
 
   // KPI 2 — Fill Rate
-  document.getElementById('kpi-fillrate-val').textContent = frTipo.length ? fmt(fillRateActual,1)+'%' : '—';
-  document.getElementById('kpi-fillrate-val').style.color = frTipo.length ? cc(fillRateActual) : 'inherit';
+  document.getElementById('kpi-fillrate-val').textContent = frOk ? fmt(fillRateActual,1)+'%' : '—';
+  document.getElementById('kpi-fillrate-val').style.color = frOk ? cc(fillRateActual) : 'inherit';
   const topFill = [...frTipo].sort((a,b)=>b.pedidos-a.pedidos)[0];
   document.getElementById('kpi-fillrate-sub').textContent = topFill
-    ? `${topFill.Documento}: ${fmt(topFill.fill_rate,1)}% (mayor volumen)`
-    : sinDatosMes ? 'Sin pedidos Empacado/Preparado en este mes' : '—';
+    ? (etiqTipos
+        ? `${etiqTipos} · ${frTipo.reduce((s,t)=>s+t.preparada,0).toLocaleString('es-CO')}/${frTipo.reduce((s,t)=>s+t.pedida,0).toLocaleString('es-CO')} uds`
+        : `${topFill.Documento}: ${fmt(topFill.fill_rate,1)}% (mayor volumen)`)
+    : sinDatosMes ? 'Sin pedidos Empacado/Preparado en este mes'
+    : etiqTipos ? `Sin pedidos de ${etiqTipos} en Empacado/Preparado` : '—';
 
   // KPI 3 — Pedido Perfecto
-  document.getElementById('kpi-perfecto-val').textContent = frTipo.length ? fmt(perfectoActual,1)+'%' : '—';
-  document.getElementById('kpi-perfecto-val').style.color = frTipo.length ? cc(perfectoActual) : 'inherit';
+  document.getElementById('kpi-perfecto-val').textContent = perfOk ? fmt(perfectoActual,1)+'%' : '—';
+  document.getElementById('kpi-perfecto-val').style.color = perfOk ? cc(perfectoActual) : 'inherit';
   document.getElementById('kpi-perfecto-sub').textContent = sinDatosMes
     ? 'Sin pedidos Empacado/Preparado en este mes'
+    : etiqTipos ? `${etiqTipos} · ${frTipo.reduce((s,t)=>s+t.perfectos,0)}/${frTipo.reduce((s,t)=>s+t.pedidos,0)} pedidos perfectos`
     : 'Todas las líneas del pedido 100% completas';
 
   // KPI 4 — PT vence <=6 meses
@@ -1896,7 +2005,11 @@ function renderIndicadores(){
   });
 
   // Gráfico Fill Rate por mes (línea, siempre todos los meses — igual que OTIF por mes)
-  const fillMeses = IND.fillrate_mes || [];
+  const fillMeses = tiposSel
+    ? serieMesTipos(IND.fillrate_mes_tipo, t => ({
+        preparada: t.preparada, pedida: t.pedida, perfectos: t.perfectos, pedidos: t.pedidos,
+        fill_rate: t.pedida ? +(t.preparada / t.pedida * 100).toFixed(1) : 0}))
+    : (IND.fillrate_mes || []);
   mkChart('c-ind-fillrate-mes',{
     type:'line',
     data:{
@@ -1913,8 +2026,10 @@ function renderIndicadores(){
     }}}}}
   });
 
-  // Gráfico OTIF por tipo (top 10 por volumen de pedidos · respeta filtro de mes)
-  const otTipo = [...otifTipo].sort((a,b)=>b.pedidos-a.pedidos).slice(0,10);
+  // Gráfico OTIF por tipo (respeta filtro de mes · top 10 por volumen, o solo
+  // los tipos seleccionados si hay filtro de tipo activo)
+  let otTipo = [...otifTipo].sort((a,b)=>b.pedidos-a.pedidos);
+  if(!tiposSel) otTipo = otTipo.slice(0,10);
   mkChart('c-ind-otif-tipo',{
     type:'bar',
     data:{ labels: otTipo.map(t=>t.Documento), datasets:[{data:otTipo.map(t=>t.otif_pct), backgroundColor:otTipo.map(t=>cc(t.otif_pct)), borderRadius:4}] },
@@ -1924,8 +2039,9 @@ function renderIndicadores(){
     }}}}}
   });
 
-  // Gráfico Fill Rate por tipo (top 10 por volumen de pedidos)
-  const fr = [...frTipo].sort((a,b)=>b.pedidos-a.pedidos).slice(0,10);
+  // Gráfico Fill Rate por tipo (top 10 por volumen, o solo los tipos filtrados)
+  let fr = [...frTipo].sort((a,b)=>b.pedidos-a.pedidos);
+  if(!tiposSel) fr = fr.slice(0,10);
   mkChart('c-ind-fillrate',{
     type:'bar',
     data:{ labels: fr.map(t=>t.Documento), datasets:[{data:fr.map(t=>t.fill_rate), backgroundColor:fr.map(t=>cc(t.fill_rate)), borderRadius:4}] },
@@ -1984,8 +2100,9 @@ function renderIndicadores(){
     }}}}}
   });
 
-  // Gráfico Quiebres por tipo (top 10 por volumen de pedidos · respeta filtro de mes)
-  const qTipo = [...quiebreTipo].sort((a,b)=>b.pedidos-a.pedidos).slice(0,10);
+  // Gráfico Quiebres por tipo (top 10 por volumen, o solo los tipos filtrados · respeta filtro de mes)
+  let qTipo = [...quiebreTipo].sort((a,b)=>b.pedidos-a.pedidos);
+  if(!tiposSel) qTipo = qTipo.slice(0,10);
   mkChart('c-ind-quiebres-tipo',{
     type:'bar',
     data:{ labels: qTipo.map(t=>t.Documento), datasets:[{data:qTipo.map(t=>t.pct_pedidos_afectados), backgroundColor:qTipo.map(t=>ccInv(t.pct_pedidos_afectados)), borderRadius:4}] },
@@ -2280,6 +2397,8 @@ function initFiltrosMes(){
     o.value = s; o.textContent = `${diaCorto(s)} – ${diaCorto(finDeSemana(s))}`;
     opdSemanaSel.appendChild(o);
   });
+
+  initTiposInd();
 }
 
 initFiltrosMes();
