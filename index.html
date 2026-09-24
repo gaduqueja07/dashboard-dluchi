@@ -164,6 +164,37 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
 .ocup-lvr .t i{display:block;height:100%;background:var(--blue);}
 .ocup-lvr .v{text-align:right;font-variant-numeric:tabular-nums;font-weight:600;}
 @media (max-width:1000px){.row-ocup{grid-template-columns:1fr;}#ocup-c3d{height:400px;}.ocup-stage{min-height:400px;}}
+/* OCUPACIÓN BODEGA — recorrido, buscador, detalle P1/P2 */
+.ocup-walk-sel{background:var(--bg2);border:1px solid var(--border2);color:var(--text2);border-radius:5px;padding:6px 9px;font-size:11.5px;outline:none;cursor:pointer;}
+.ocup-walkbar{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);display:none;align-items:center;gap:6px;background:rgba(22,27,39,.92);border:1px solid var(--border2);border-radius:10px;padding:6px 8px;z-index:3;flex-wrap:wrap;justify-content:center;max-width:92%;}
+.ocup-walkbar button{background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:7px;width:36px;height:36px;font-size:16px;cursor:pointer;flex-shrink:0;}
+.ocup-walkbar button:hover{background:var(--bg4);}
+.ocup-walkbar .ocup-walk-exit{width:auto;padding:0 12px;font-size:11.5px;background:var(--red-d);color:var(--red);border-color:rgba(242,87,87,.3);}
+#ocup-walk-info{font-size:11px;color:var(--text2);min-width:130px;text-align:center;}
+.ocup-search-row{display:flex;gap:10px;align-items:center;margin-bottom:10px;flex-wrap:wrap;}
+#ocup-search{flex:1;min-width:220px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:8px 10px;font-size:13px;outline:none;}
+#ocup-search:disabled{opacity:.5;cursor:not-allowed;}
+.ocup-search-status{font-size:12px;color:var(--text2);white-space:nowrap;}
+.ocup-search-results{max-height:280px;overflow-y:auto;}
+.ocup-search-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 8px;border-bottom:1px solid var(--border);font-size:12.5px;cursor:pointer;}
+.ocup-search-item:hover{background:rgba(255,255,255,.03);}
+.ocup-search-item .u{font-weight:600;color:var(--text);}
+.ocup-search-item .meta{color:var(--text2);font-size:11.5px;white-space:nowrap;}
+.ocup-search-more{width:100%;margin-top:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);border-radius:6px;padding:7px;font-size:12px;cursor:pointer;}
+.ocup-detail-overlay{position:absolute;inset:0;align-items:center;justify-content:center;background:rgba(8,10,15,.6);z-index:10;padding:16px;}
+.ocup-detail-panel{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.5);padding:20px 44px 22px 22px;width:100%;max-width:900px;max-height:100%;overflow-y:auto;position:relative;}
+@media (min-width:721px){.ocup-detail-panel{min-width:720px;}}
+.ocup-detail-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);font-size:15px;cursor:pointer;}
+.ocup-detail-close:hover{background:var(--bg4);color:var(--text);}
+@media (max-width:640px){.ocup-detail-overlay{position:fixed;inset:0;padding:0;z-index:200;} .ocup-detail-panel{max-width:100%;min-width:0;width:100%;height:100%;max-height:100%;border-radius:0;}}
+.ocup-p-blocks{display:grid;grid-template-columns:1fr;gap:14px;margin-top:12px;}
+@media (min-width:721px){.ocup-p-blocks{grid-template-columns:1fr 1fr;}}
+.ocup-p-block-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px;}
+.ocup-p-table{width:100%;font-size:11px;border-collapse:collapse;}
+.ocup-p-table th{cursor:pointer;text-align:left;color:var(--text3);font-weight:600;padding:3px 5px;border-bottom:1px solid var(--border);user-select:none;white-space:nowrap;}
+.ocup-p-table td{padding:3px 5px;border-bottom:1px solid var(--border);color:var(--text);}
+.ocup-p-row-venc td{color:#f25757;} .ocup-p-row-alerta td{color:#f5a524;}
+@media (max-width:640px){.ocup-walkbar button{width:40px;height:40px;}}
 </style>
 </head>
 <body>
@@ -675,6 +706,16 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
 
   <div id="ocup-alerta-estructura"></div>
 
+  <div class="card" style="margin-bottom:14px;">
+    <div class="card-title">Buscar en el rack</div>
+    <div class="card-sub">Por código, nombre de referencia, lote o contenedor — resalta las posiciones que coinciden</div>
+    <div class="ocup-search-row">
+      <input type="text" id="ocup-search" disabled placeholder="Cargando detalle de contenedores…" autocomplete="off">
+      <span id="ocup-search-status" class="ocup-search-status"></span>
+    </div>
+    <div id="ocup-search-results" class="ocup-search-results"></div>
+  </div>
+
   <div class="row-ocup">
     <div class="card ocup-stage-card">
       <div class="ocup-stage">
@@ -690,8 +731,26 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
             <button data-ocup-cam="top">Planta</button>
             <button data-ocup-cam="front">Frente</button>
           </div>
+          <div class="ocup-seg" role="group" aria-label="Recorrido por calle">
+            <select id="ocup-walk-sel" class="ocup-walk-sel"><option value="">Recorrer calle…</option></select>
+          </div>
+        </div>
+        <div class="ocup-walkbar" id="ocup-walkbar">
+          <button id="ocup-walk-back" title="Retroceder módulo" aria-label="Retroceder módulo">◀</button>
+          <button id="ocup-walk-down" title="Bajar nivel" aria-label="Bajar nivel">▼</button>
+          <span id="ocup-walk-info">—</span>
+          <button id="ocup-walk-up" title="Subir nivel" aria-label="Subir nivel">▲</button>
+          <button id="ocup-walk-fwd" title="Avanzar módulo" aria-label="Avanzar módulo">▶</button>
+          <button id="ocup-walk-exit" class="ocup-walk-exit" type="button">Volver a vista general</button>
         </div>
         <div class="ocup-hint">Arrastra para girar · rueda para acercar · clic en una estiba para ver su contenido</div>
+        <div class="ocup-detail-overlay" id="ocup-detail-overlay" style="display:none;">
+          <div class="ocup-detail-panel">
+            <button class="ocup-detail-close" id="ocup-detail-close" aria-label="Cerrar detalle" type="button">✕</button>
+            <div class="card-title">Posición seleccionada</div>
+            <div id="ocup-det"><p class="ocup-empty">Haz clic en una estiba o en una celda del plano.</p></div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="ocup-aside">
@@ -703,10 +762,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02);}
         <label class="ocup-rng" for="ocup-lvl"><span>Mostrar hasta el nivel</span><strong id="ocup-lvlv">7</strong></label>
         <input type="range" id="ocup-lvl" min="1" max="7" value="7">
         <div class="card-sub" style="margin-top:6px">Baja el nivel para ver las posiciones inferiores sin que las tapen las de arriba.</div>
-      </div>
-      <div class="card ocup-det">
-        <div class="card-title">Posición seleccionada</div>
-        <div id="ocup-det"><p class="ocup-empty">Haz clic en una estiba o en una celda del plano.</p></div>
       </div>
     </div>
   </div>
@@ -1285,6 +1340,30 @@ function _ocupBuild(){
   const POS = OCUP.pos;
   const UMBRAL_VENC = OCUP.umbral_alerta_vencimiento_dias || 180;
 
+  // Detalle por contenedor (ocupacion_detalle.json): archivo aparte, se pide
+  // solo al abrir esta pestaña — el resumen (OCUP.pos) ya viaja embebido y
+  // alcanza para el 3D/plano/leyenda sin esperar esta descarga.
+  let DETALLE = null, _ocupSelected = null;
+  const detSort = {p1:{col:'dv',dir:1}, p2:{col:'dv',dir:1}};
+  function normTxt(s){ return (s==null?'':String(s)).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+  function ensureDetalle(){
+    fetch('ocupacion_detalle.json').then(r=>{
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(j=>{
+      DETALLE = j;
+      const inp=document.getElementById('ocup-search');
+      inp.disabled=false; inp.placeholder='Ej. K010101, lote, contenedor...';
+      document.getElementById('ocup-search-status').textContent='';
+      // refresca el panel solo si ya estaba abierto — si el usuario lo cerró
+      // mientras cargaba, no lo reabrimos solos.
+      if(_ocupSelected && document.getElementById('ocup-detail-overlay').style.display==='flex') select(_ocupSelected);
+    }).catch(()=>{
+      document.getElementById('ocup-search-status').textContent='No se pudo cargar el detalle de contenedores.';
+    });
+  }
+  ensureDetalle();
+
   function tunel(c,m,n){ return PASO.calles.includes(c) && m===PASO.modulo && PASO.niveles_excluidos.includes(n); }
 
   const PITCH=2.539, SLOT=1.2192, PD=1.0668, FLUE=0.254, GAP=0.3;
@@ -1310,6 +1389,7 @@ function _ocupBuild(){
     const [c,m,n,k,p]=id.split('-').map(Number);
     return {c,m,n,k,p,id,d,x:xMod(m)+0.05+(k-1)*SLOT+SLOT/2,y:0.72,z:PISO_Z0+1.2+(p-1)*1.3};
   });
+  const byId = {}; ALL.concat(PISO).forEach(a=>{byId[a.id]=a;});
 
   // ── KPIs
   const pct = OCUP.pct_rack;
@@ -1329,6 +1409,8 @@ function _ocupBuild(){
 
   // ── Color por modo
   let mode='zona';
+  let searchActive=false, searchMatchSet=new Set();
+  let walkCalle=null, walkModulo=1, walkNivel=0, walkFacing=-1, walkLabels=[];
   function colorOf(d){
     if(mode==='zona') return COLORES_ZONA[d.z] || OTR;
     if(mode==='venc'){
@@ -1409,10 +1491,37 @@ function _ocupBuild(){
   }
   function paint(){
     const col=new THREE.Color();
-    OCC.forEach((a,i)=>{col.set(colorOf(a.d)); occM.setColorAt(i,col);});
+    if(searchActive){
+      OCC.forEach((a,i)=>{ col.set(a.d && searchMatchSet.has(a.id) ? '#ffe066' : '#2a323d'); occM.setColorAt(i,col); });
+    } else {
+      OCC.forEach((a,i)=>{col.set(colorOf(a.d)); occM.setColorAt(i,col);});
+    }
     occM.instanceColor.needsUpdate=true; legend();
   }
   layout(); paint();
+
+  // Transición suave de cámara (tween manual) — instantánea si el visitante
+  // pide menos movimiento (prefers-reduced-motion).
+  function tweenCamera(pos,target,ms){
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches || !ms){
+      camera.position.set(...pos); controls.target.set(...target); controls.update(); return;
+    }
+    const p0=camera.position.clone(), t0=controls.target.clone();
+    const p1=new THREE.Vector3(...pos), t1=new THREE.Vector3(...target);
+    const t0ms=performance.now();
+    (function step(){
+      const k=Math.min((performance.now()-t0ms)/ms,1);
+      const e=k<0.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+      camera.position.lerpVectors(p0,p1,e); controls.target.lerpVectors(t0,t1,e); controls.update();
+      if(k<1) requestAnimationFrame(step);
+    })();
+  }
+  function flyTo(a,ms){
+    if(walkCalle!==null) exitWalk();
+    if(RUN[a.c]){ const [fz,dir]=RUN[a.c]; tweenCamera([a.x-6,10,fz-dir*14],[a.x,4,fz+dir*1.2],ms==null?500:ms); }
+    else tweenCamera([a.x-6,10,a.z+8],[a.x,1,a.z],ms==null?500:ms);
+    document.querySelectorAll('[data-ocup-cam]').forEach(bb=>bb.classList.remove('on'));
+  }
 
   // Rótulos de calle
   function label(txt,x,z){
@@ -1423,10 +1532,19 @@ function _ocupBuild(){
   }
   RACK_CALLES.forEach(c=>{const [fz,dir]=RUN[c]; label('Calle '+c,-2.6,fz+dir*1.2);});
   label('Calle '+CALLE_PISO+' · piso',-2.6,(PISO_Z0+PISO_Z1)/2);
+  // Rótulo "Paso" en el módulo 04 de las calles 2-6 (niveles 1-3 sin rack) —
+  // siempre visible (no depende del modo caminar), una etiqueta por calle
+  // afectada ya que cada calle tiene su propio corte físico.
+  PASO.calles.forEach(c=>{
+    const [fz,dir]=RUN[c];
+    smallLabel('PASO', xMod(PASO.modulo)+PITCH/2, 2.8, fz, 0.85, '#f5a524');
+  });
 
   // Cámaras
   const CAMS={persp:[[-14,28,54],[CX,2.5,CZ+3]],top:[[CX,68,CZ+3.01],[CX,0,CZ+3]],front:[[CX,8,-34],[CX,5,CZ]]};
-  function setCam(k){camera.position.set(...CAMS[k][0]);controls.target.set(...CAMS[k][1]);controls.update();
+  function setCam(k){
+    if(walkCalle!==null) exitWalk();
+    camera.position.set(...CAMS[k][0]);controls.target.set(...CAMS[k][1]);controls.update();
     document.querySelectorAll('[data-ocup-cam]').forEach(b=>b.classList.toggle('on',b.dataset.ocupCam===k));}
   setCam('persp');
 
@@ -1445,18 +1563,66 @@ function _ocupBuild(){
     const h=hit&&(!hitE||hit.distance<=hitE.distance+0.01)?OCC[hit.instanceId]:hitE?EMP[hitE.instanceId]:null;
     if(h) select(h);
   });
+  function buildDetTable(rows,blockId){
+    if(rows===null) return '<p class="ocup-empty">Cargando…</p>';
+    if(!rows.length) return '<p class="ocup-empty">Vacía.</p>';
+    const st=detSort[blockId];
+    const sorted=rows.slice().sort((x,y)=>{
+      let xv=x[st.col], yv=y[st.col];
+      if(st.col==='dv'){ xv=xv==null?Infinity:xv; yv=yv==null?Infinity:yv; }
+      return (xv>yv?1:xv<yv?-1:0)*st.dir;
+    });
+    const arrow=c=>st.col===c?(st.dir>0?' ▲':' ▼'):'';
+    const body=sorted.map(r=>{
+      const cls=r.dv==null?'':(r.dv<0?'ocup-p-row-venc':(r.dv<=UMBRAL_VENC?'ocup-p-row-alerta':''));
+      const vencTxt=r.dv==null?'—':(r.dv<0?`Vencido (${-r.dv}d)`:`${r.fv} (${r.dv}d)`);
+      return `<tr class="${cls}"><td>${r.cont}</td><td>${r.cod}</td><td>${r.nom}</td><td>${r.lote||'—'}</td>`+
+        `<td>${r.cant.toLocaleString('es-CO')}</td><td>${vencTxt}</td></tr>`;
+    }).join('');
+    return `<div style="overflow-x:auto;"><table class="ocup-p-table">
+      <thead><tr><th>Contenedor</th><th>Código</th><th>Referencia</th><th>Lote</th>
+      <th data-sort="cant" data-block="${blockId}">Cantidad${arrow('cant')}</th>
+      <th data-sort="dv" data-block="${blockId}">Vencim.${arrow('dv')}</th></tr></thead>
+      <tbody>${body}</tbody></table></div>`;
+  }
   function select(a){
+    const isNew = !_ocupSelected || _ocupSelected.id!==a.id;
+    _ocupSelected = a;
+    if(isNew){ detSort.p1={col:'dv',dir:1}; detSort.p2={col:'dv',dir:1}; }
     selBox.position.set(a.x,a.y,a.z); selBox.visible=true;
     const code=`B201C${a.c}${pad(a.m)}N${a.n}00K${a.k}P${a.p}`;
     const posTxt=`Calle ${a.c}, módulo ${pad(a.m)}, nivel ${a.n}, estiba ${a.k}, fondo ${a.p}`;
     const d=a.d, venc=d&&d.dv!=null?(d.dv<0?`Vencido hace ${-d.dv} días`:`En ${d.dv} días`):'Sin fecha';
-    document.getElementById('ocup-det').innerHTML=d?`<dl>
+    const header=d?`<dl>
       <dt>Ubicación</dt><dd>${code}</dd><dt>Posición</dt><dd>${posTxt}</dd><dt>Zona</dt><dd>${d.z}</dd>
       <dt>Referencia</dt><dd>${d.r}${d.nr>1?` y ${d.nr-1} más`:''}</dd>
       <dt>Contenedores</dt><dd>${d.nc.toLocaleString('es-CO')}</dd><dt>Unidades</dt><dd>${d.q.toLocaleString('es-CO')}</dd>
       <dt>Vencimiento</dt><dd>${venc}</dd></dl>`
       :`<dl><dt>Ubicación</dt><dd>${code}</dd><dt>Posición</dt><dd>${posTxt}</dd></dl><p class="ocup-empty" style="margin-top:8px">Posición libre.</p>`;
+    const hueco=`${a.c}-${pad(a.m)}-${a.n}-${a.k}`;
+    const p1=DETALLE?(DETALLE.pos[hueco+'-1']||[]):null;
+    const p2=DETALLE?(DETALLE.pos[hueco+'-2']||[]):null;
+    const blocks=`<div class="ocup-p-blocks">
+      <div><div class="ocup-p-block-title">Estiba P1 · adelante</div>${buildDetTable(p1,'p1')}</div>
+      <div><div class="ocup-p-block-title">Estiba P2 · atrás</div>${buildDetTable(p2,'p2')}</div>
+    </div>`;
+    document.getElementById('ocup-det').innerHTML = header + blocks;
+    document.getElementById('ocup-detail-overlay').style.display='flex';
   }
+  function closeDetail(){
+    document.getElementById('ocup-detail-overlay').style.display='none';
+    selBox.visible=false;
+  }
+  document.getElementById('ocup-detail-close').onclick=closeDetail;
+  document.getElementById('ocup-detail-overlay').addEventListener('click',e=>{
+    if(e.target.id==='ocup-detail-overlay') closeDetail();
+  });
+  document.getElementById('ocup-det').addEventListener('click',e=>{
+    const th=e.target.closest('th[data-sort]'); if(!th||!_ocupSelected) return;
+    const st=detSort[th.dataset.block];
+    if(st.col===th.dataset.sort) st.dir*=-1; else { st.col=th.dataset.sort; st.dir=1; }
+    select(_ocupSelected);
+  });
 
   // Plano 2D
   const grid=document.getElementById('ocup-grid');
@@ -1473,10 +1639,9 @@ function _ocupBuild(){
   });
   grid.innerHTML=gh;
   grid.addEventListener('click',e=>{const b=e.target.closest('.ocup-cell'); if(!b) return;
-    const c=+b.dataset.c,m=+b.dataset.m,[fz,dir]=RUN[c], x=xMod(m)+PITCH/2;
-    controls.target.set(x,4,fz+dir*1.2); camera.position.set(x-6,10,fz-dir*14); controls.update();
-    const a=ALL.find(a=>a.c===c&&a.m===m&&a.d)||ALL.find(a=>a.c===c&&a.m===m); if(a) select(a);
-    document.querySelectorAll('[data-ocup-cam]').forEach(bb=>bb.classList.remove('on'));
+    const c=+b.dataset.c,m=+b.dataset.m;
+    const a=ALL.find(a=>a.c===c&&a.m===m&&a.d)||ALL.find(a=>a.c===c&&a.m===m);
+    if(a){ flyTo(a); select(a); }
   });
 
   // Por nivel
@@ -1489,6 +1654,139 @@ function _ocupBuild(){
     document.querySelectorAll('[data-ocup-mode]').forEach(x=>x.classList.toggle('on',x===b)); paint();});
   document.querySelectorAll('[data-ocup-cam]').forEach(b=>b.onclick=()=>setCam(b.dataset.ocupCam));
   document.getElementById('ocup-lvl').oninput=e=>{maxLvl=+e.target.value;document.getElementById('ocup-lvlv').textContent=maxLvl;layout();};
+
+  // ── Recorrido por calle (modo caminar) ──────────────────────────────
+  const WALK_STANDOFF=1.7;
+  function smallLabel(txt,x,y,z,scale,color){
+    const cnv=document.createElement('canvas'); cnv.width=128; cnv.height=64; const g=cnv.getContext('2d');
+    g.fillStyle='rgba(15,17,23,.88)'; g.beginPath(); g.roundRect?g.roundRect(4,8,120,48,10):g.rect(4,8,120,48); g.fill();
+    g.fillStyle=color||'#2dd4bf'; g.font='700 30px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(txt,64,32);
+    const s=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cnv),depthTest:false}));
+    s.scale.set(1.6*scale,0.8*scale,1); s.position.set(x,y,z); scene.add(s); return s;
+  }
+  function updateWalkLabels(){
+    walkLabels.forEach(s=>{scene.remove(s); s.material.map.dispose(); s.material.dispose();});
+    walkLabels=[];
+    if(walkCalle===null || walkCalle===CALLE_PISO) return;
+    const [fz,dir]=RUN[walkCalle];
+    const topY=LVLY[NIV-1]+1.5;
+    for(let m=1;m<=MODS;m++) walkLabels.push(smallLabel('M'+pad(m),xMod(m)+PITCH/2,topY,fz+dir*0.6,1));
+    for(let n=1;n<=NIV;n++) walkLabels.push(smallLabel('N'+n,xMod(walkModulo)+PITCH/2-1.8,LVLY[n-1]+0.7,fz-dir*(WALK_STANDOFF-0.4),0.85));
+  }
+  function walkCamPos(){
+    const m=Math.min(Math.max(walkModulo,1),MODS);
+    if(walkCalle===CALLE_PISO){
+      const x=xMod(m)+PITCH/2, z=(PISO_Z0+PISO_Z1)/2;
+      return {pos:[x,1.7,z], look:[x+walkFacing*4,1.7,z]};
+    }
+    const [fz,dir]=RUN[walkCalle];
+    const x=xMod(m)+PITCH/2, z=fz-dir*WALK_STANDOFF;
+    const y=walkNivel===0?1.7:(LVLY[walkNivel-1]+1.0);
+    return {pos:[x,y,z], look:[x+walkFacing*4,y,z]};
+  }
+  function updateWalkInfo(){
+    document.getElementById('ocup-walk-info').textContent = walkCalle===CALLE_PISO
+      ? `Zona piso · módulo ${pad(walkModulo)}`
+      : `Calle ${walkCalle} · módulo ${pad(walkModulo)} · ${walkNivel===0?'altura de caminata':'nivel '+walkNivel}`;
+  }
+  function applyWalkCam(animate){ const {pos,look}=walkCamPos(); tweenCamera(pos,look,animate?500:0); }
+  function enterWalk(calle){
+    walkCalle=calle; walkModulo=calle===CALLE_PISO?Math.ceil(MODS/2):1; walkNivel=0; walkFacing=-1;
+    document.getElementById('ocup-walkbar').style.display='flex';
+    document.getElementById('ocup-walk-up').style.display=calle===CALLE_PISO?'none':'';
+    document.getElementById('ocup-walk-down').style.display=calle===CALLE_PISO?'none':'';
+    document.querySelectorAll('[data-ocup-cam]').forEach(bb=>bb.classList.remove('on'));
+    updateWalkLabels(); applyWalkCam(true); updateWalkInfo();
+  }
+  function exitWalk(){
+    walkCalle=null; document.getElementById('ocup-walkbar').style.display='none';
+    updateWalkLabels(); setCam('persp'); document.getElementById('ocup-walk-sel').value='';
+  }
+  function walkStep(dm){
+    walkFacing=dm>0?-1:1; walkModulo=Math.min(Math.max(walkModulo+dm,1),MODS);
+    applyWalkCam(true); updateWalkInfo(); if(walkCalle!==CALLE_PISO) updateWalkLabels();
+  }
+  function walkLevel(dn){
+    if(walkCalle===CALLE_PISO) return;
+    walkNivel=Math.min(Math.max(walkNivel+dn,0),NIV); applyWalkCam(true); updateWalkInfo();
+  }
+  const walkSel=document.getElementById('ocup-walk-sel');
+  RACK_CALLES.forEach(c=>{const o=document.createElement('option'); o.value=c; o.textContent='Calle '+c; walkSel.appendChild(o);});
+  {const o=document.createElement('option'); o.value=CALLE_PISO; o.textContent='Zona piso (calle '+CALLE_PISO+')'; walkSel.appendChild(o);}
+  walkSel.onchange=()=>{const v=walkSel.value; if(v==='') exitWalk(); else enterWalk(+v);};
+  document.getElementById('ocup-walk-exit').onclick=exitWalk;
+  // Los módulos se numeran desde la derecha (módulo 01 = extremo derecho del
+  // plano, módulo 13 = extremo izquierdo — ver el plano 2D, que los lista
+  // M13...M01 de izquierda a derecha). Por eso "avanzar hacia la derecha"
+  // (▶ / flecha derecha) es ir hacia números de módulo MENORES, no mayores.
+  document.getElementById('ocup-walk-fwd').onclick=()=>walkStep(-1);
+  document.getElementById('ocup-walk-back').onclick=()=>walkStep(1);
+  document.getElementById('ocup-walk-up').onclick=()=>walkLevel(1);
+  document.getElementById('ocup-walk-down').onclick=()=>walkLevel(-1);
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){ if(document.getElementById('ocup-detail-overlay').style.display==='flex'){ e.preventDefault(); closeDetail(); } return; }
+    if(walkCalle===null) return;
+    if(!document.getElementById('page-ocupacion').classList.contains('active')) return;
+    if(e.key==='ArrowRight'){e.preventDefault(); walkStep(-1);}
+    else if(e.key==='ArrowLeft'){e.preventDefault(); walkStep(1);}
+    else if(e.key==='ArrowUp'){e.preventDefault(); walkLevel(1);}
+    else if(e.key==='ArrowDown'){e.preventDefault(); walkLevel(-1);}
+  });
+
+  // ── Buscador ─────────────────────────────────────────────────────────
+  let searchMatches=[], searchShown=50;
+  function renderSearchResults(){
+    const q=document.getElementById('ocup-search').value.trim();
+    const totalUnid=searchMatches.reduce((s,m)=>s+m.q,0);
+    document.getElementById('ocup-search-status').textContent = searchMatches.length
+      ? `${searchMatches.length.toLocaleString('es-CO')} posiciones · ${totalUnid.toLocaleString('es-CO')} unidades`
+      : (q ? 'Sin coincidencias.' : '');
+    const box=document.getElementById('ocup-search-results');
+    const shown=searchMatches.slice(0,searchShown);
+    let html=shown.map(m=>{
+      const vencTxt=m.dv==null?'Sin fecha':(m.dv<0?`Vencido hace ${-m.dv}d`:`${m.dv}d`);
+      return `<div class="ocup-search-item" data-key="${m.key}">`+
+        `<span><span class="u">${m.u}</span><br><span class="meta">${m.z}</span></span>`+
+        `<span class="meta">${m.nc} cont · ${m.q.toLocaleString('es-CO')} uds</span>`+
+        `<span class="meta">${vencTxt}</span></div>`;
+    }).join('');
+    if(searchMatches.length>searchShown){
+      html+=`<button class="ocup-search-more" id="ocup-search-more">Ver más (${(searchMatches.length-searchShown).toLocaleString('es-CO')} restantes)</button>`;
+    }
+    box.innerHTML=html;
+    const moreBtn=document.getElementById('ocup-search-more');
+    if(moreBtn) moreBtn.onclick=()=>{searchShown+=50; renderSearchResults();};
+  }
+  let searchTimer=null;
+  function doSearch(qraw){
+    clearTimeout(searchTimer);
+    searchTimer=setTimeout(()=>{
+      const nq=normTxt(qraw).trim();
+      if(!nq){ searchMatches=[]; searchActive=false; paint(); renderSearchResults(); return; }
+      if(!DETALLE){ document.getElementById('ocup-search-status').textContent='Cargando detalle…'; return; }
+      const out=[];
+      for(const [k,conts] of Object.entries(DETALLE.pos||{})){
+        const hit=conts.some(c=>normTxt(c.cod).includes(nq)||normTxt(c.nom).includes(nq)||normTxt(c.lote).includes(nq)||normTxt(c.cont).includes(nq));
+        if(!hit) continue;
+        const s=POS[k]; if(!s) continue;
+        out.push({key:k,u:s.u,nc:s.nc,q:s.q,dv:s.dv,z:s.z});
+      }
+      out.sort((a,b)=>{
+        if(a.dv==null&&b.dv==null) return 0;
+        if(a.dv==null) return 1; if(b.dv==null) return -1;
+        return a.dv-b.dv;
+      });
+      searchMatches=out; searchShown=50;
+      searchActive=true; searchMatchSet=new Set(out.map(o=>o.key)); paint();
+      renderSearchResults();
+    },150);
+  }
+  document.getElementById('ocup-search').addEventListener('input',e=>doSearch(e.target.value));
+  document.getElementById('ocup-search-results').addEventListener('click',e=>{
+    const item=e.target.closest('.ocup-search-item'); if(!item) return;
+    const a=byId[item.dataset.key]; if(!a) return;
+    flyTo(a); select(a);
+  });
 }
 
 // ── RESUMEN ─────────────────────────────────────────────
